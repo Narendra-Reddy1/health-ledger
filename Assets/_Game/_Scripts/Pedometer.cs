@@ -4,7 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class StepLogger : MonoBehaviour
+public class Pedometer : MonoBehaviour
 {
     [SerializeField] TextMeshProUGUI  DEBUGTEXT;
     [SerializeField] private TextMeshProUGUI _footStepCountTxt;
@@ -48,16 +48,8 @@ public class StepLogger : MonoBehaviour
         {
             long currentSteps = StepCounter.current.stepCounter.ReadValue();
             long stepsTaken = currentSteps - stepOffset;
+                
             _footStepCountTxt.text = "Steps: " + stepsTaken;
-
-            //try
-            //{
-            //    Challenge.staticData.player.steps = (int)stepsTaken;
-            //}
-            //catch (System.OverflowException)
-            //{
-            //    DEBUGTEXT.text = "Failure to convert long steps";
-            //}
         }
     }
 
