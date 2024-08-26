@@ -3,6 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Net.Http;
 using UnityEngine;
+using UnityEngine.Networking;
+
 public static class NetworkHandler
 {
 
@@ -21,7 +23,7 @@ public static class NetworkHandler
         public Method method;
     }
 
-    public static void FetchData(string url, Action onSuccess, Action onFail, RequestData requestData = null)
+    public static  async void FetchData(string url, Action onSuccess, Action onFail, RequestData requestData = null)
     {
         using (HttpClient client = new HttpClient())
         {
@@ -30,7 +32,21 @@ public static class NetworkHandler
                     foreach (var kvp in requestData.headers)
                         client.DefaultRequestHeaders.Add(kvp.Key, kvp.Value);
 
-
+            UnityWebRequest request = new UnityWebRequest();
+            
+            switch (requestData.method)
+            {
+                case Method.GET:
+                    break;
+                case Method.POST:
+                    break;
+                case Method.PUT:
+                    break;
+                case Method.PATCH:
+                    break;
+                case Method.DELETE:
+                    break;
+            }
         }
 
     }
