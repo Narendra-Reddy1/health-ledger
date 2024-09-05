@@ -23,6 +23,7 @@ public static class NetworkHandler
         public string contentType = "application/json";
         public Method method;
     }
+    public const string BASE_URL = "http://localhost:3000/";
     static readonly HttpClient client = new HttpClient();
     public static void Init()
     {
@@ -81,6 +82,26 @@ public static class NetworkHandler
             onFail?.Invoke(e.ToString());
         }
     }
+    public static async void Fetch<T1, T2>(string url, Action<T1> onSuccess, Action<T2> onFail, RequestData requestData = null)
+    {
+        HttpRequestMessage request = _GetHttpRequest(url, requestData);
+        HttpResponseMessage response = await client.SendAsync(request);
+        string data = string.Empty;
+        try
+        {
+            data = await response.Content.ReadAsStringAsync();
+            Debug.Log(data);
+            response.EnsureSuccessStatusCode();
+            onSuccess?.Invoke(JsonUtility.FromJson<T1>(data));
+
+        }
+        catch (Exception e)
+        {
+            Debug.Log(e);
+            Debug.Log($"Status code: {response.StatusCode} phrase: {response.ReasonPhrase}");
+            onFail?.Invoke(JsonUtility.FromJson<T2>(data));
+        }
+    }
 
     private static HttpRequestMessage _GetHttpRequest(string url, RequestData requestData)
     {
@@ -110,8 +131,36 @@ public static class NetworkHandler
             {
                 request.Headers.Add(kvp.Key, kvp.Value);
             }
-        request.RequestUri = new Uri(url);
+        request.RequestUri = new Uri(BASE_URL + url);
         return request;
 
     }
 }
+
+
+#region Data
+
+
+[Serializable]
+public class LoginData
+{
+    public User user;
+}
+
+[Serializable]
+public class User
+{
+    public string username;
+    public string stepsCount;
+    public string publicKey;
+    public int balance;
+}
+
+[Serializable]
+public class BaseErrorResponse
+{
+    public string message;
+}
+
+
+#endregion Data
