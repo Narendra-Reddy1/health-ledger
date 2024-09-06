@@ -11,8 +11,9 @@ namespace BenStudios
 
 
 
-        public void ToggleCanvas(bool value)
+        public void ToggleScreen(bool value)
         {
+            gameObject.SetActive(value);
             _canvas.enabled = value;
         }
     }

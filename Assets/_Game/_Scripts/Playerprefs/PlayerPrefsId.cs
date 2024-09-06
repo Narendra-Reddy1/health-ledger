@@ -1,5 +1,8 @@
 
 public enum PlayerPrefKeys
 {
-    isLoggedIn
+    isLoggedIn,
+    username,
+    hasWallet,
+    publicKey,
 }

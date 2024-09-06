@@ -23,8 +23,10 @@ public static class NetworkHandler
         public string contentType = "application/json";
         public Method method;
     }
-    public const string BASE_URL = "http://localhost:3000/";
+    public const string BASE_URL = "http://localhost:3000";
     static readonly HttpClient client = new HttpClient();
+
+
     public static void Init()
     {
 
@@ -102,6 +104,49 @@ public static class NetworkHandler
             onFail?.Invoke(JsonUtility.FromJson<T2>(data));
         }
     }
+    public static async void Fetch(string url, Action<string> onSuccess, Action<string> onFail, RequestData requestData = null)
+    {
+        HttpRequestMessage request = _GetHttpRequest(url, requestData);
+        Debug.Log("body \n " + requestData.body);
+        HttpResponseMessage response = await client.SendAsync(request);
+        string data = string.Empty;
+        try
+        {
+
+            data = await response.Content.ReadAsStringAsync();
+            Debug.Log(data);
+            response.EnsureSuccessStatusCode();
+            onSuccess?.Invoke(data);
+
+        }
+        catch (Exception e)
+        {
+            Debug.Log(e);
+            Debug.Log($"Status code: {response.StatusCode} phrase: {response.ReasonPhrase}");
+            onFail?.Invoke(data);
+        }
+    }
+    public static async void Fetch2(string url, Action<HttpResponseMessage> onSuccess, Action<HttpResponseMessage> onFail, RequestData requestData = null)
+    {
+        HttpRequestMessage request = _GetHttpRequest(url, requestData);
+        HttpResponseMessage response = await client.SendAsync(request);
+        string data = string.Empty;
+        try
+        {
+
+            data = await response.Content.ReadAsStringAsync();
+            Debug.Log(data);
+            response.EnsureSuccessStatusCode();
+            onSuccess?.Invoke(response);
+
+        }
+        catch (Exception e)
+        {
+            Debug.Log(e);
+            Debug.Log($"Status code: {response.StatusCode} phrase: {response.ReasonPhrase}");
+            onFail?.Invoke(response);
+        }
+    }
 
     private static HttpRequestMessage _GetHttpRequest(string url, RequestData requestData)
     {
@@ -142,7 +187,7 @@ public static class NetworkHandler
 
 
 [Serializable]
-public class LoginData
+public class UserData
 {
     public User user;
 }
@@ -160,6 +205,54 @@ public class User
 public class BaseErrorResponse
 {
     public string message;
+}
+
+
+[Serializable]
+public class ConfigData
+{
+    public Wallet wallet;
+}
+
+[Serializable]
+public class Wallet
+{
+    public Withdraw withdraw;
+}
+
+[Serializable]
+public class Withdraw
+{
+    public int withdrawFee;
+    public Transactionlimits transactionLimits;
+}
+
+[Serializable]
+public class Transactionlimits
+{
+    public Limit perTransaction;
+    public Limit perDay;
+}
+
+[Serializable]
+public class Limit
+{
+    public int min;
+    public int max;
+}
+
+
+[Serializable]
+public class WalletBalance
+{
+    public string publicKey;
+    public Balances balances;
+}
+
+[Serializable]
+public class Balances
+{
+    public string tokens;
 }
 
 

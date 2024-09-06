@@ -34,6 +34,9 @@ namespace BenStudios
         private void Start()
         {
             _floorBtns[ButtonType.Home].Activate(); //Default Home
+            _ResetAllPages();
+            _pages[ButtonType.Home].ToggleScreen(true);
+
         }
 
         private void Callback_On_Step_Count_Recorded(object args)
@@ -53,11 +56,11 @@ namespace BenStudios
         {
             var btnType = (ButtonType)args;
             _ResetAllPages();
-            _pages[btnType].ToggleCanvas(true);
+            _pages[btnType].ToggleScreen(true);
         }
         void _ResetAllPages()
         {
-            _pages.Values.ToList().ForEach(x => x.ToggleCanvas(false));
+            _pages.Values.ToList().ForEach(x => x.ToggleScreen(false));
         }
 
 

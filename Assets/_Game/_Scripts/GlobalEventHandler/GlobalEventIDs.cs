@@ -2,6 +2,9 @@ namespace BenStudios.EventSystem
 {
     public enum EventID
     {
+
+        OnToggleLoadingPanel,
+
         //UI Navigation
         OnFloorButtonClicked,
 
