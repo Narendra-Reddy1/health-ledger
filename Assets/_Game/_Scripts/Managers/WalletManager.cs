@@ -131,7 +131,7 @@ namespace BenStudios
         {
             if (_secretPin.text.Length < 6)
             {
-                _errorTxt.SetText("Pin is shorter like your Penis. Enter lengthy one to satisfy me ;)");
+                _errorTxt.SetText("Pin is short. Secure pin must be 6 digits");
                 return;
             }
             if (_secretPin.text != _confirmSecretPin.text)
