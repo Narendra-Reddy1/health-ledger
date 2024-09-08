@@ -198,7 +198,7 @@ public class User
     public string username;
     public string stepsCount;
     public string publicKey;
-    public int balance;
+    public float balance;
 }
 
 [Serializable]

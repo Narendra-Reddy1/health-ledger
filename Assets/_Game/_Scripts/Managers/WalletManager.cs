@@ -2,6 +2,7 @@ using BenStudios.EventSystem;
 using DG.Tweening;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,24 +12,35 @@ namespace BenStudios
     public class WalletManager : MonoBehaviour
     {
 
+        [Header("Wallet")]
         [SerializeField] private Transform _walletMainPage;
         [SerializeField] private TextMeshProUGUI _balanceTxt;
         [SerializeField] private TextMeshProUGUI _publicKeyTxt;
         [SerializeField] private Button _refreshBtn;
 
-
+        [Space]
+        [Header("Withdraw")]
         [SerializeField] private Transform _withdrawPanel;
         [SerializeField] private TextMeshProUGUI _dailyLimitTxt;
         [SerializeField] private TextMeshProUGUI _minWithdrawLimitTxt;
         [SerializeField] private TextMeshProUGUI _withdraFeeTxt;
+        [SerializeField] private TextMeshProUGUI _withdrawErrorTxt;
+        [SerializeField] private TMP_InputField _toAddressField;
+        [SerializeField] private TMP_InputField _withdrawPinField;
+        [SerializeField] private TMP_InputField _withdrawAmountField;
+
         [SerializeField] private Button _withdrawBtn;
         [SerializeField] private Button _withdrawPanelBtn;
         [SerializeField] private Button _withdrawPanelCloseBtn;
 
+        [Space]
+        [Header("History")]
         [SerializeField] private HistoryElement _historyElement;
         [SerializeField] private Transform _walletHistoryParent;
 
 
+        [Space]
+        [Header("New Wallet")]
         [SerializeField] private Transform _generateWalletPanel;
         [SerializeField] private TMP_InputField _secretPin;
         [SerializeField] private TMP_InputField _confirmSecretPin;
@@ -39,7 +51,9 @@ namespace BenStudios
 
         private void OnEnable()
         {
-
+            _Init();
+            _ResetWithdrawPanel();
+            _withdrawPanel.gameObject.SetActive(false);
             _withdrawPanelBtn.onClick.AddListener(_OpenWithdrawPanel);
             _withdrawPanelCloseBtn.onClick.AddListener(_CloseWithdrawPanel);
             _refreshBtn.onClick.AddListener(_RefreshBalance);
@@ -47,6 +61,10 @@ namespace BenStudios
             _secretPin.onEndEdit.AddListener(_OnSecretPinEntered);
             _confirmSecretPin.onEndEdit.AddListener(_OnSecretPinEntered);
             _withdrawBtn.onClick.AddListener(_WithdrawBalance);
+
+            _withdrawPinField.onEndEdit.AddListener(_OnWithdrawPinEntered);
+            _toAddressField.onEndEdit.AddListener(_OnToAddressEntered);
+            _withdrawAmountField.onEndEdit.AddListener(_OnWithdrawAmountEntered);
         }
 
         private void OnDisable()
@@ -58,36 +76,20 @@ namespace BenStudios
             _generateWallet.onClick.RemoveListener(_GenerateNewWallet);
             _secretPin.onEndEdit.RemoveListener(_OnSecretPinEntered);
             _confirmSecretPin.onEndEdit.RemoveListener(_OnSecretPinEntered);
-        }
-        private void Start()
-        {
-            _Init();
+
+            _withdrawPinField.onEndEdit.RemoveListener(_OnWithdrawPinEntered);
+            _toAddressField.onEndEdit.RemoveListener(_OnToAddressEntered);
+            _withdrawAmountField.onEndEdit.RemoveListener(_OnWithdrawAmountEntered);
         }
         private void _Init()
         {
             bool hasWallet = PlayerprefsHandler.GetPlayerPrefsBool(PlayerPrefKeys.hasWallet);
             _generateWalletPanel.gameObject.SetActive(!hasWallet);
-        }
-
-        //Move these methods a generic script to use for all screens.
-        private void _OpenWithdrawPanel()
-        {
-            _withdrawPanel.gameObject.SetActive(true);
-            _withdrawPanel.DOScale(1, .3f).From(0.4f).onComplete += () =>
+            if (hasWallet)
             {
-                _ConfigureWallet();
-            };
-
+                _RefreshBalance();
+            }
         }
-        private void _CloseWithdrawPanel()
-        {
-            _withdrawPanel.DOScale(0, .3f).From(1).onComplete += () =>
-              {
-                  _withdrawPanel.gameObject.SetActive(false);
-              };
-
-        }
-
         private void _RefreshBalance()
         {
             GlobalEventHandler.TriggerEvent(EventID.OnToggleLoadingPanel, true);
@@ -98,6 +100,7 @@ namespace BenStudios
             {
                 WalletBalance walletBalance = JsonUtility.FromJson<WalletBalance>(data);
                 _balanceTxt.SetText(walletBalance.balances.tokens.ToString());
+                _publicKeyTxt.SetText(walletBalance.publicKey);
                 GlobalEventHandler.TriggerEvent(EventID.OnToggleLoadingPanel, false);
             }, (err) =>
             {
@@ -109,10 +112,8 @@ namespace BenStudios
             });
         }
 
-        private void _WithdrawBalance()
-        {
 
-        }
+        #region Create Wallet
 
         private void _OnSecretPinEntered(string value)
         {
@@ -130,7 +131,7 @@ namespace BenStudios
         {
             if (_secretPin.text.Length < 6)
             {
-                _errorTxt.SetText("Secure Pin is shorter. It must be 6 characters in length");
+                _errorTxt.SetText("Pin is shorter like your Penis. Enter lengthy one to satisfy me ;)");
                 return;
             }
             if (_secretPin.text != _confirmSecretPin.text)
@@ -197,6 +198,121 @@ namespace BenStudios
                 method = NetworkHandler.Method.GET
             });
         }
+
+        #endregion Create Wallet
+
+        #region Withdraw
+
+        private void _ResetWithdrawPanel()
+        {
+            _withdrawAmountField.text = string.Empty;
+            _toAddressField.text = string.Empty;
+            _withdrawPinField.text = string.Empty;
+            _withdrawErrorTxt.SetText(string.Empty);
+        }
+        //Move these methods a generic script to use for all screens.
+        private void _OpenWithdrawPanel()
+        {
+            _withdrawPanel.gameObject.SetActive(true);
+            _withdrawPanel.DOScale(1, .3f).From(0.4f).onComplete += () =>
+            {
+                _ConfigureWallet();
+            };
+        }
+
+        private void _CloseWithdrawPanel()
+        {
+            _withdrawPanel.DOScale(0, .3f).From(1).onComplete += () =>
+            {
+                _ResetWithdrawPanel();
+                _withdrawPanel.gameObject.SetActive(false);
+            };
+
+        }
+        bool _isAmountValid = false;
+        private void _OnWithdrawAmountEntered(string amount)
+        {
+            if (amount.Length <= 0) return;
+            var value = float.Parse(amount);
+            if (value <= 0)
+            {
+                _withdrawErrorTxt.SetText("Amount should be a positive number");
+                _isAmountValid = false;
+            }
+            else if (value > UserDataHandler.instance.userData.user.balance)
+            {
+                Debug.Log("Insufficent balance");
+                _withdrawErrorTxt.SetText("Insufficient balance");
+                _isAmountValid = false;
+            }
+            else
+            {
+                _withdrawErrorTxt.SetText(string.Empty);
+                _isAmountValid = true;
+            }
+            _withdrawBtn.interactable = _IsAddressValid(_toAddressField.text) && _isAmountValid;
+        }
+        private void _OnWithdrawPinEntered(string pin)
+        {
+                if (pin.Length < 6)
+                    _withdrawErrorTxt.SetText("Incorrect PIN");
+        }
+        private void _OnToAddressEntered(string address)
+        {
+
+            bool isValidAddress = _IsAddressValid(_toAddressField.text);
+            if (!isValidAddress)
+            {
+                _withdrawErrorTxt.SetText("Wallet addres is invalid");
+            }
+            else if (address == UserDataHandler.instance.userData.user.publicKey)
+            {
+                _withdrawErrorTxt.SetText("Really(-_-)? Transfering to your wallet also incur gas cost!!");
+            }
+            _withdrawBtn.interactable = isValidAddress && _isAmountValid;
+        }
+        private void _WithdrawBalance()
+        {
+            string username = PlayerprefsHandler.GetPlayerPrefsString(PlayerPrefKeys.username);
+            string url = $"/{username}/withdraw";
+            string passkey = _withdrawPinField.text;
+            string toAddress = _toAddressField.text;
+            float amount = float.Parse(_withdrawAmountField.text);
+            //if (!_IsAddressValid(toAddress))
+            //{
+            //    Debug.LogError("Invalid wallet address");
+            //    return;
+            //}
+            //if (_IsPinCorrect())
+            //{
+            //    Debug.Log("Incorrect PIN");
+            //    return;
+            //}
+
+            NetworkHandler.Fetch(url, (data) =>
+            {
+
+            }, (err) =>
+            {
+
+            }, new NetworkHandler.RequestData
+            {
+                method = NetworkHandler.Method.POST,
+                body = "{\"passkey\":\"" + passkey + "\",\"amount\":" + amount + ",\"toAddress\":\"" + toAddress + "\"}"
+            });
+        }
+
+        private bool _IsAddressValid(string address)
+        {
+            // Check if the address starts with "0x" and is 42 characters long
+            if (string.IsNullOrEmpty(address) || address.Length != 42 || !address.StartsWith("0x"))
+                return false;
+            string hexPart = address.Substring(2); // Remove the "0x" prefix
+            return Regex.IsMatch(hexPart, @"^[0-9a-fA-F]{40}$");
+        }
+    
+
+        #endregion Withdraw
 
     }
 }

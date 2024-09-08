@@ -17,12 +17,14 @@ namespace BenStudios
 
         [SerializeField] private Button _login;
         [SerializeField] private Button _signUp;
+        [SerializeField] private GameObject _errorTxtParent;
         [SerializeField] private TextMeshProUGUI _errorTxt;
 
 
         private void OnEnable()
         {
             _errorTxt.SetText(string.Empty);
+            _errorTxtParent.SetActive(false);
             _password.onFocusSelectAll = false;
             _passwordToggle.onValueChanged.AddListener(_TogglePasswordVisibility);
 
@@ -55,15 +57,19 @@ namespace BenStudios
 
         private void _Login()
         {
+
+            _errorTxtParent.SetActive(false);
             _errorTxt.SetText(string.Empty);
             if (_username.text.Length < 3)
             {
+                _errorTxtParent.SetActive(true);
                 _errorTxt.SetText("Username length must be more than 3 characters");
                 return;
             }
             else if (!_isPasswordValid(_password.text))
             {
                 ///show error text
+                _errorTxtParent.SetActive(true);
                 _errorTxt.SetText("Please enter the valid password");
                 return;
             }
@@ -71,6 +77,7 @@ namespace BenStudios
             NetworkHandler.Fetch("/login", (userData) =>
              {
                  var loginData = JsonUtility.FromJson<UserData>(userData);
+                 UserDataHandler.instance.userData = loginData;
                  PlayerprefsHandler.SetPlayerPrefsAsString(PlayerPrefKeys.username, loginData.user.username);
 
                  //disable login screen 
@@ -79,13 +86,13 @@ namespace BenStudios
                  PlayerprefsHandler.SetPlayerPrefsBool(PlayerPrefKeys.isLoggedIn, true);
                  if (loginData.user.publicKey != null)
                  {
-                     PlayerprefsHandler.SetPlayerPrefsAsString(PlayerPrefKeys.publicKey, loginData.user.publicKey);
                      PlayerprefsHandler.SetPlayerPrefsBool(PlayerPrefKeys.hasWallet, true);
                  }
                  gameObject.SetActive(false);
 
              }, (err) =>
              {
+                 _errorTxtParent.SetActive(true);
                  var error = JsonUtility.FromJson<BaseErrorResponse>(err);
                  if (error.message.Contains("Invalid credentials"))
                      _errorTxt.SetText("Invalid credentials");
@@ -102,15 +109,18 @@ namespace BenStudios
         }
         private void _SignUp()
         {
+            _errorTxtParent.SetActive(false);
             _errorTxt.SetText(string.Empty);
             if (_username.text.Length < 3)
             {
+                _errorTxtParent.SetActive(true);
                 _errorTxt.SetText("Username length must be more than 3 characters");
                 return;
             }
             else if (!_isPasswordValid(_password.text))
             {
                 ///show error text
+                _errorTxtParent.SetActive(true);
                 _errorTxt.SetText("Password must be 8 characters long and must contain atleast a <b>Number</b> , <b>Capital Letter</b> , <b> Special character </b>");
                 return;
             }
@@ -120,6 +130,7 @@ namespace BenStudios
             {
                 //disable login screen show the home page
                 var signupData = JsonUtility.FromJson<UserData>(userData);
+                UserDataHandler.instance.userData = signupData;
                 PlayerprefsHandler.SetPlayerPrefsAsString(PlayerPrefKeys.username, signupData.user.username);
                 PlayerprefsHandler.SetPlayerPrefsBool(PlayerPrefKeys.isLoggedIn, true);
                 _ToggleLoadingScreen(false);
@@ -128,6 +139,7 @@ namespace BenStudios
 
             }, (err) =>
             {
+                _errorTxtParent.SetActive(true);
                 var error = JsonUtility.FromJson<BaseErrorResponse>(err);
                 if (error.message.Contains("conflicting usernames"))
                     _errorTxt.SetText("Username already taken. Please use different one");

@@ -9,9 +9,10 @@ public class UserDataHandler : MonoBehaviour
 
     private float _stepsCountPerDay = 1_500f;//this will update based on the user activity
 
+    
+    public UserData userData;
     public float StepCountPerDay => _stepsCountPerDay;
     public long TodayStepCount => _stepsCount;
-
     public static UserDataHandler instance { get; private set; }
     private void Awake()
     {
