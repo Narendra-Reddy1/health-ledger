@@ -70,29 +70,7 @@ namespace BenStudios
         [Button]
         public void AddStep()
         {
-
             GlobalEventHandler.TriggerEvent(EventID.OnStepCountUpdated, step);
-        }
-
-        [Button]
-        public void TestHttp()
-        {
-            NetworkHandler.Fetch("http://localhost:3000/test", () =>
-            {
-                Debug.Log("SUccessss");
-                //Debug.Log(res);
-            }, () =>
-            {
-                Debug.Log("FAILED");
-            }, new NetworkHandler.RequestData()
-            {
-                method = NetworkHandler.Method.GET,
-                //method = NetworkHandler.Method.POST,
-                //body = "{\"key\":\"123\"}",
-                //contentType="application/json"
-
-                
-            });
         }
 #endif
     }

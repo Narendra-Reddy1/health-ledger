@@ -4,10 +4,14 @@ using UnityEngine;
 
 public class Main : MonoBehaviour
 {
+    [SerializeField] private GameObject _loginScreen;
     private void Awake()
     {
-        if (!PlayerprefsHandler.GetPlayerPrefsBool(PlayerPrefKeys.isLoggedIn)) return;
-
+        if (!PlayerprefsHandler.GetPlayerPrefsBool(PlayerPrefKeys.isLoggedIn))
+        {
+            _loginScreen.SetActive(true);
+            return;
+        }
         string username = PlayerprefsHandler.GetPlayerPrefsString(PlayerPrefKeys.username);
         string url = $"/{username}/user-info";
         NetworkHandler.Fetch(url, (data) =>

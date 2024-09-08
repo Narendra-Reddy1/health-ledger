@@ -155,6 +155,7 @@ namespace BenStudios
                 {
                     _generateWalletPanel.gameObject.SetActive(false);
                 };
+                PlayerprefsHandler.SetPlayerPrefsBool(PlayerPrefKeys.hasWallet, true);
                 GlobalEventHandler.TriggerEvent(EventID.OnToggleLoadingPanel, false);
 
             }, (err) =>
@@ -254,8 +255,8 @@ namespace BenStudios
         }
         private void _OnWithdrawPinEntered(string pin)
         {
-                if (pin.Length < 6)
-                    _withdrawErrorTxt.SetText("Incorrect PIN");
+            if (pin.Length < 6)
+                _withdrawErrorTxt.SetText("Incorrect PIN");
         }
         private void _OnToAddressEntered(string address)
         {
@@ -310,7 +311,7 @@ namespace BenStudios
             string hexPart = address.Substring(2); // Remove the "0x" prefix
             return Regex.IsMatch(hexPart, @"^[0-9a-fA-F]{40}$");
         }
-    
+
 
         #endregion Withdraw
 

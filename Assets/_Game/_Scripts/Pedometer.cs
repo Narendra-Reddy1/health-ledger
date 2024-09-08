@@ -9,9 +9,11 @@ namespace BenStudios
     public class Pedometer : MonoBehaviour
     {
 
-        long stepOffset;
-        bool permissionGranted = false;
-        private long previousSteps = 0;
+        int _stepsOffset;
+        bool _isPermissionGranted = false;
+        private int _previousSteps = 0;
+        private int _totalRecordedSteps;
+
         void Start()
         {
             if (Application.isEditor)
@@ -25,7 +27,7 @@ namespace BenStudios
 
         void Update()
         {
-            if (Application.isEditor || !permissionGranted)
+            if (Application.isEditor || !_isPermissionGranted)
             {
                 Debug.Log("No permission given");
                 return;
@@ -37,18 +39,21 @@ namespace BenStudios
                 return;
             }
 
-            if (stepOffset == 0)
+            if (_stepsOffset == 0)
             {
-                stepOffset = StepCounter.current.stepCounter.ReadValue();
+                _stepsOffset = StepCounter.current.stepCounter.ReadValue();
             }
             else
             {
-                long currentSteps = StepCounter.current.stepCounter.ReadValue();
-                long stepsTaken = currentSteps - stepOffset;
-                long stepsDiff = stepsTaken - previousSteps;
+                int currentSteps = StepCounter.current.stepCounter.ReadValue();
+                int stepsTaken = currentSteps - _stepsOffset;
+                int stepsDiff = stepsTaken - _previousSteps;
                 if (stepsDiff > 0)
+                {
+                    _totalRecordedSteps += stepsDiff;
                     GlobalEventHandler.TriggerEvent(EventID.OnStepCountUpdated, stepsDiff);
-                previousSteps = stepsTaken;
+                }
+                _previousSteps = stepsTaken;
             }
         }
 
@@ -61,7 +66,7 @@ namespace BenStudios
             AndroidRuntimePermissions.Permission result = await AndroidRuntimePermissions.RequestPermissionAsync("android.permission.ACTIVITY_RECOGNITION");
             if (result == AndroidRuntimePermissions.Permission.Granted)
             {
-                permissionGranted = true;
+                _isPermissionGranted = true;
                 InitializeStepCounter();
             }
             else if (result == AndroidRuntimePermissions.Permission.Denied)
@@ -72,10 +77,27 @@ namespace BenStudios
 #endif
         }
 
-        void InitializeStepCounter()
+        void InitializeStepCounter(bool fromPause = false)
         {
             InputSystem.EnableDevice(StepCounter.current);
-            stepOffset = StepCounter.current.stepCounter.ReadValue();
+            if (!fromPause)
+                _stepsOffset = StepCounter.current.stepCounter.ReadValue();
+            else
+            {
+                _stepsOffset = PlayerprefsHandler.GetSecurePlayerPrefsInt(PlayerPrefKeys.totalCountedSteps);
+                //int cachedOffset = PlayerprefsHandler.GetSecurePlayerPrefsInt(PlayerPrefKeys.totalCountedSteps);
+                //_totalRecordedSteps = PlayerprefsHandler.GetSecurePlayerPrefsInt(PlayerPrefKeys.totalRecordedSteps);
+                //_stepsOffset = StepCounter.current.stepCounter.ReadValue();
+                //_stepsOffset -= _totalRecordedSteps;
+
+                //if (_stepsOffset > (cachedOffset - _totalRecordedSteps))
+                //{
+                //    _totalRecordedSteps += (_stepsOffset - (cachedOffset - _totalRecordedSteps));
+                //    // _previousSteps = _stepsOffset - previousOffset;
+                //}
+                //PlayerprefsHandler.SetSecurePlayerPrefsInt(PlayerPrefKeys.totalRecordedSteps, 0);
+                PlayerprefsHandler.SetSecurePlayerPrefsInt(PlayerPrefKeys.totalCountedSteps, 0);
+            }
         }
 
         void OnApplicationPause(bool pause)
@@ -85,10 +107,14 @@ namespace BenStudios
              * is it mean this step counter resets when app is paused???
              * then that will be an extra headache to handle.....
              */
-            if (!pause && permissionGranted)
+            PlayerprefsHandler.SetSecurePlayerPrefsInt(PlayerPrefKeys.totalRecordedSteps, _totalRecordedSteps);
+            PlayerprefsHandler.SetSecurePlayerPrefsInt(PlayerPrefKeys.totalCountedSteps, StepCounter.current.stepCounter.ReadValue());
+            if (!pause && _isPermissionGranted)
             {
                 // Reinitialize the step counter when the app is resumed
-                InitializeStepCounter();
+                InitializeStepCounter(true);
+                //Trigger re-initialize Event;
+                //reset playerprefs.
             }
         }
     }

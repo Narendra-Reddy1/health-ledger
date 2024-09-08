@@ -199,19 +199,31 @@ public class User
     public string stepsCount;
     public string publicKey;
     public float balance;
+    public List<TournamentEntry> tournaments;
+
 }
 
-[Serializable]
-public class BaseErrorResponse
-{
-    public string message;
-}
 
+#region Wallet
 
 [Serializable]
 public class ConfigData
 {
     public Wallet wallet;
+}
+
+
+[Serializable]
+public class WalletBalance
+{
+    public string publicKey;
+    public Balances balances;
+}
+
+[Serializable]
+public class Balances
+{
+    public string tokens;
 }
 
 [Serializable]
@@ -241,19 +253,72 @@ public class Limit
     public int max;
 }
 
+#endregion Wallet
+
+#region Tournament
+
+
+//get 
+[Serializable]
+public class TournamentData
+{
+    public int tournamentId;
+    public int startTime;
+    public int endTime;
+    public int prizePool;
+    public int prizeDistributionId;
+    public List<Participant> participants;
+    public string txHash;
+}
 
 [Serializable]
-public class WalletBalance
+public class Participant
 {
+    public string username;
+    public int steps;
     public string publicKey;
-    public Balances balances;
+}
+
+
+[Serializable]
+public class PrizePoolDistribution
+{
+    public int first;
+    public int second;
+    public int third;
+    public int fourToTen;
+    public int elevenToTwentyFive;
+    public int twentySixToFifty;
+    public int fiftyOneToHundred;
 }
 
 [Serializable]
-public class Balances
+public class TournamentEntry
 {
-    public string tokens;
+    public bool isParticipated;
+    public int tournamentId;
+
 }
 
+
+[Serializable]
+public class JoinTournamentResult
+{
+    public string txHash;
+    public int tournamentId;
+    public int stepsCount;
+}
+
+
+#endregion Tournament
+
+
+[Serializable]
+public class BaseErrorResponse
+{
+    public string message;
+}
 
 #endregion Data
+
+
