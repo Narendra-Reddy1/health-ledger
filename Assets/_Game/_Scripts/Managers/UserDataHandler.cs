@@ -6,15 +6,15 @@ using UnityEngine;
 
 public class UserDataHandler : MonoBehaviour
 {
-    private int _stepsCount;
+    private int _stepsCounter;
+    private int _totalStepsInTheSession;
     private int _tournamentSteps;
 
     private float _stepsCountPerDay = 1_500f;//this will update based on the user activity
 
-
     public UserData userData;
     public float StepCountPerDay => _stepsCountPerDay;
-    public int TodayStepCount => _stepsCount;
+    public int TodayStepCount => _stepsCounter;
 
     public bool isParticipatedInTournament;
     public int participatedInTournamentId;
@@ -31,14 +31,14 @@ public class UserDataHandler : MonoBehaviour
 
     private void OnEnable()
     {
-       // InvokeRepeating(nameof(_UploadToBlockchain), 120, 120);
-        //InvokeRepeating(nameof(_UploadToServer), 30, 30);
+        InvokeRepeating(nameof(_UploadToBlockchain), 45, 45);
+        InvokeRepeating(nameof(_UploadToServer), 30, 30);
         GlobalEventHandler.AddListener(EventID.OnStepCountUpdated, Callback_On_Step_Count);
     }
     private void OnDisable()
     {
-        //CancelInvoke(nameof(_UploadToBlockchain));
-        //CancelInvoke(nameof(_UploadToServer));
+        CancelInvoke(nameof(_UploadToBlockchain));
+        CancelInvoke(nameof(_UploadToServer));
         GlobalEventHandler.RemoveListener(EventID.OnStepCountUpdated, Callback_On_Step_Count);
     }
 
@@ -46,8 +46,7 @@ public class UserDataHandler : MonoBehaviour
     private void _UploadToBlockchain()
     {
         int currentRunningTournamentId = PlayerprefsHandler.GetPlayerPrefsInt(PlayerPrefKeys.currentRunningTournament);
-        bool isParticipated = userData.user.tournaments.Any(x => (x.tournamentId == currentRunningTournamentId && isParticipatedInTournament));
-        if (!isParticipated) return;
+        if (!isParticipatedInTournament) return;
         NetworkHandler.Fetch("/tournament/record-steps", (data) =>
         {
             _tournamentSteps = 0;
@@ -58,23 +57,25 @@ public class UserDataHandler : MonoBehaviour
             Debug.LogError("Failed to upload Steps to server!!");
         }, new NetworkHandler.RequestData
         {
-            method = NetworkHandler.Method.PATCH,
+            method = NetworkHandler.Method.POST,
             body = "{\"steps\":" + _tournamentSteps + ",\"tournamentId\":" + 0 + ",\"username\":\"" + userData.user.username + "\"}"
         });
     }
     private void _UploadToServer()
     {
         int currentRunningTournamentId = PlayerprefsHandler.GetPlayerPrefsInt(PlayerPrefKeys.currentRunningTournament);
-        NetworkHandler.Fetch("/record-steps", (data) =>
+        string url = $"/{userData.user.username}/record-steps";
+        NetworkHandler.Fetch(url, (data) =>
         {
-            _stepsCount = 0;
+            _stepsCounter = 0;
+            //update ui event
         }, (err) =>
         {
             Debug.LogError("Failed to upload Steps to server!!");
         }, new NetworkHandler.RequestData
         {
-            method = NetworkHandler.Method.PATCH,
-            body = "{\"steps\":" + _stepsCount + ",\"username\":\"" + userData.user.username + "\"}"
+            method = NetworkHandler.Method.POST,
+            body = "{\"steps\":" + _stepsCounter + "}"
         });
     }
 
@@ -83,8 +84,10 @@ public class UserDataHandler : MonoBehaviour
         var steps = (int)args;
         if (steps > 0)
         {
-            _stepsCount += steps;
-            GlobalEventHandler.TriggerEvent(EventID.OnStepCountRecorded, _stepsCount);
+            _stepsCounter += steps;
+            _totalStepsInTheSession += steps;
+            if (isParticipatedInTournament) _tournamentSteps++;
+            GlobalEventHandler.TriggerEvent(EventID.OnStepCountRecorded, _totalStepsInTheSession);
         }
     }
 

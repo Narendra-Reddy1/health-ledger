@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class Main : MonoBehaviour
@@ -21,14 +22,15 @@ public class Main : MonoBehaviour
             if (userData.user.publicKey != null)
             {
                 PlayerprefsHandler.SetPlayerPrefsBool(PlayerPrefKeys.hasWallet, true);
+                UserDataHandler.instance.isParticipatedInTournament = userData.user.tournaments.Any(
+                    x => x.tournamentId == PlayerprefsHandler.GetPlayerPrefsInt(PlayerPrefKeys.currentRunningTournament, 0));
             }
-
         }, (err) =>
-        {
-            Debug.LogError($"Failed to fetch user data <b> Main </b> {err}");
-        }, new NetworkHandler.RequestData
-        {
-            method = NetworkHandler.Method.GET
-        });
+  {
+      Debug.LogError($"Failed to fetch user data <b> Main </b> {err}");
+  }, new NetworkHandler.RequestData
+  {
+      method = NetworkHandler.Method.GET
+  });
     }
 }

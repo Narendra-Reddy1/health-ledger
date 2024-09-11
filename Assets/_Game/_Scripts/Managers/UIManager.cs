@@ -41,7 +41,7 @@ namespace BenStudios
 
         private void Callback_On_Step_Count_Recorded(object args)
         {
-            var steps = (long)args;
+            var steps = (int)args;
             _stepsCountTxt.SetText(steps.ToString());
             float fillAmount = ((float)steps / UserDataHandler.instance.StepCountPerDay);
             _stepsCountRadialFillbar.fillAmount = fillAmount;
@@ -66,7 +66,7 @@ namespace BenStudios
 
 #if UNITY_EDITOR
 
-        long step = 1;
+        int step = 1;
         [Button]
         public void AddStep()
         {

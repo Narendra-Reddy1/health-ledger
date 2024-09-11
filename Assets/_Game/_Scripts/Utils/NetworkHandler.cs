@@ -23,7 +23,8 @@ public static class NetworkHandler
         public string contentType = "application/json";
         public Method method;
     }
-    public const string BASE_URL = "http://localhost:3000";
+    //public const string BASE_URL = "http://localhost:3000";
+    public const string BASE_URL = "https://grand-uniformly-moray.ngrok-free.app";
     static readonly HttpClient client = new HttpClient();
 
 
@@ -200,9 +201,7 @@ public class User
     public string publicKey;
     public float balance;
     public List<TournamentEntry> tournaments;
-
 }
-
 
 #region Wallet
 
@@ -258,7 +257,14 @@ public class Limit
 #region Tournament
 
 
-//get 
+//get
+[Serializable]
+public class Tournament
+{
+    public TournamentData data;
+    public PrizePoolDistribution distribution;
+}
+
 [Serializable]
 public class TournamentData
 {
@@ -278,7 +284,6 @@ public class Participant
     public int steps;
     public string publicKey;
 }
-
 
 [Serializable]
 public class PrizePoolDistribution
@@ -300,7 +305,6 @@ public class TournamentEntry
 
 }
 
-
 [Serializable]
 public class JoinTournamentResult
 {
@@ -308,7 +312,6 @@ public class JoinTournamentResult
     public int tournamentId;
     public int stepsCount;
 }
-
 
 #endregion Tournament
 
@@ -320,5 +323,3 @@ public class BaseErrorResponse
 }
 
 #endregion Data
-
-

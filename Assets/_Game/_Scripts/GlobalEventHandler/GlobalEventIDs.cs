@@ -5,8 +5,10 @@ namespace BenStudios.EventSystem
 
         OnToggleLoadingPanel,
 
-        //UI Navigation
+        //UI 
         OnFloorButtonClicked,
+        OnStepsUploadedToSever,
+        OnStepsUploadedToBlockchain,
 
         //Core
         OnStepCountUpdated,

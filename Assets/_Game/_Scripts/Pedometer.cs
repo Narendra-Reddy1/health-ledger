@@ -12,8 +12,6 @@ namespace BenStudios
         int _stepsOffset;
         bool _isPermissionGranted = false;
         private int _previousSteps = 0;
-        private int _totalRecordedSteps;
-
         void Start()
         {
             if (Application.isEditor)
@@ -50,7 +48,7 @@ namespace BenStudios
                 int stepsDiff = stepsTaken - _previousSteps;
                 if (stepsDiff > 0)
                 {
-                    _totalRecordedSteps += stepsDiff;
+                    //_totalRecordedSteps += stepsDiff;
                     GlobalEventHandler.TriggerEvent(EventID.OnStepCountUpdated, stepsDiff);
                 }
                 _previousSteps = stepsTaken;
@@ -80,24 +78,24 @@ namespace BenStudios
         void InitializeStepCounter(bool fromPause = false)
         {
             InputSystem.EnableDevice(StepCounter.current);
-            if (!fromPause)
-                _stepsOffset = StepCounter.current.stepCounter.ReadValue();
-            else
-            {
-                _stepsOffset = PlayerprefsHandler.GetSecurePlayerPrefsInt(PlayerPrefKeys.totalCountedSteps);
-                //int cachedOffset = PlayerprefsHandler.GetSecurePlayerPrefsInt(PlayerPrefKeys.totalCountedSteps);
-                //_totalRecordedSteps = PlayerprefsHandler.GetSecurePlayerPrefsInt(PlayerPrefKeys.totalRecordedSteps);
-                //_stepsOffset = StepCounter.current.stepCounter.ReadValue();
-                //_stepsOffset -= _totalRecordedSteps;
+            //if (!fromPause)
+            //    _stepsOffset = StepCounter.current.stepCounter.ReadValue();
+            //else
+            //{
+            //    _stepsOffset = PlayerprefsHandler.GetSecurePlayerPrefsInt(PlayerPrefKeys.totalCountedSteps);
+            //    //int cachedOffset = PlayerprefsHandler.GetSecurePlayerPrefsInt(PlayerPrefKeys.totalCountedSteps);
+            //    //_totalRecordedSteps = PlayerprefsHandler.GetSecurePlayerPrefsInt(PlayerPrefKeys.totalRecordedSteps);
+            //    //_stepsOffset = StepCounter.current.stepCounter.ReadValue();
+            //    //_stepsOffset -= _totalRecordedSteps;
 
-                //if (_stepsOffset > (cachedOffset - _totalRecordedSteps))
-                //{
-                //    _totalRecordedSteps += (_stepsOffset - (cachedOffset - _totalRecordedSteps));
-                //    // _previousSteps = _stepsOffset - previousOffset;
-                //}
-                //PlayerprefsHandler.SetSecurePlayerPrefsInt(PlayerPrefKeys.totalRecordedSteps, 0);
-                PlayerprefsHandler.SetSecurePlayerPrefsInt(PlayerPrefKeys.totalCountedSteps, 0);
-            }
+            //    //if (_stepsOffset > (cachedOffset - _totalRecordedSteps))
+            //    //{
+            //    //    _totalRecordedSteps += (_stepsOffset - (cachedOffset - _totalRecordedSteps));
+            //    //    // _previousSteps = _stepsOffset - previousOffset;
+            //    //}
+            //    //PlayerprefsHandler.SetSecurePlayerPrefsInt(PlayerPrefKeys.totalRecordedSteps, 0);
+            //    PlayerprefsHandler.SetSecurePlayerPrefsInt(PlayerPrefKeys.totalCountedSteps, 0);
+            //}
         }
 
         void OnApplicationPause(bool pause)
@@ -107,8 +105,8 @@ namespace BenStudios
              * is it mean this step counter resets when app is paused???
              * then that will be an extra headache to handle.....
              */
-            PlayerprefsHandler.SetSecurePlayerPrefsInt(PlayerPrefKeys.totalRecordedSteps, _totalRecordedSteps);
-            PlayerprefsHandler.SetSecurePlayerPrefsInt(PlayerPrefKeys.totalCountedSteps, StepCounter.current.stepCounter.ReadValue());
+            //PlayerprefsHandler.SetSecurePlayerPrefsInt(PlayerPrefKeys.totalRecordedSteps, _totalRecordedSteps);
+            PlayerprefsHandler.SetSecurePlayerPrefsInt(PlayerPrefKeys.totalCountedSteps, _stepsOffset);
             if (!pause && _isPermissionGranted)
             {
                 // Reinitialize the step counter when the app is resumed

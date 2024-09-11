@@ -22,11 +22,13 @@ public class TournamentManager : MonoBehaviour
     private long _endTimeStamp;
     private long _startTimeStamp;
 
+    private Tournament _tournament;
+    private int _prizePoolAmount;
     private int _prizeDistributionID;
     private int _tournamentId;
     private string _txHash;
     private ObjectPool<TournamentElement> _pool;
-
+    private List<TournamentElement> _activeElements = new List<TournamentElement>();
 
     private const string EXPLORER_BASE_URL = "https://www.oklink.com/amoy/address";//later refactor this to use based on the selected blockchain
 
@@ -47,6 +49,7 @@ public class TournamentManager : MonoBehaviour
               element.gameObject.SetActive(false);
           }, defaultCapacity: 50, maxSize: 100);
     }
+
     private void OnEnable()
     {
         _CreateLeaderboard();
@@ -63,14 +66,19 @@ public class TournamentManager : MonoBehaviour
         int tournamentId = 0;
         NetworkHandler.Fetch($"/tournament/get/{tournamentId}", (data) =>
         {
-            var tournamentData = JsonUtility.FromJson<TournamentData>(data);
-            _prizeDistributionID = tournamentData.prizeDistributionId;
-            _txHash = tournamentData.txHash;
+            _tournament = JsonUtility.FromJson<Tournament>(data);
+            _prizeDistributionID = _tournament.data.prizeDistributionId;
+            _txHash = _tournament.data.txHash;
             _SetTxHash(_txHash);
-            _endTimeStamp = tournamentData.endTime;
-            _startTimeStamp = tournamentData.startTime;
+            _endTimeStamp = _tournament.data.endTime;
+            _startTimeStamp = _tournament.data.startTime;
             string username = UserDataHandler.instance.userData.user.username;
-            bool isParticipated = tournamentData.participants.Any(x => x.username == username);
+            _prizePoolAmount = _tournament.data.prizePool;
+            _prizepoolTxt.SetText(_prizePoolAmount.ToString());
+            _StartCountdown();
+            _txHashBtn.onClick.AddListener(_OpenTournamentTxHash);
+            bool isParticipated = _tournament.data.participants.Any(x => x.username == username);
+
             if (!isParticipated)
             {
                 _fadingGroup.SetActive(true);
@@ -81,14 +89,13 @@ public class TournamentManager : MonoBehaviour
             {
                 _fadingGroup.SetActive(false);
             }
-            var count = tournamentData.participants.Count;
+            var count = _tournament.data.participants.Count;
             for (int i = 0; (i < count) && (i < 100); i++)
             {
                 var element = _pool.Get();
-                element.Init(tournamentData.participants[i], i + 1, tournamentData.participants[i].username == username);
+                element.Init(_tournament.data.participants[i], i + 1, _GetPrizePoolShare(i + 1), _tournament.data.participants[i].username == username);
+                _activeElements.Add(element);
             }
-            _StartCountdown();
-            _txHashBtn.onClick.AddListener(_OpenTournamentTxHash);
             GlobalEventHandler.TriggerEvent(EventID.OnToggleLoadingPanel, false);
         }, (err) =>
         {
@@ -99,6 +106,7 @@ public class TournamentManager : MonoBehaviour
             method = NetworkHandler.Method.GET,
         });
     }
+
     private void _DestroyLeaderboard()
     {
         _StopCountdown();
@@ -106,9 +114,9 @@ public class TournamentManager : MonoBehaviour
         {
             _content.GetChild(i).gameObject.SetActive(false);
         }
+        _activeElements.Clear();
         _txHashBtn.onClick.RemoveListener(_OpenTournamentTxHash);
     }
-
 
     private void _JoinTournament()
     {
@@ -157,6 +165,9 @@ public class TournamentManager : MonoBehaviour
         if (remainingTime <= 0)
         {
             _StopCountdown();
+            _endDate.text = string.Format("--D : --H : --M : --S");
+            _OnTournamentEnd();
+            return;
         }
         TimeSpan timeSpan = TimeSpan.FromSeconds(remainingTime);
 
@@ -165,6 +176,41 @@ public class TournamentManager : MonoBehaviour
         int minutes = timeSpan.Minutes;
         int seconds = timeSpan.Seconds;
         _endDate.text = string.Format("{0}D : {1}H : {2}M : {3:D2}S", days, hours, minutes, seconds);
+    }
+    //1728611215
+
+    private void _OnTournamentEnd()
+    {
+        _fadingGroup.SetActive(true);
+        _joinTournamentBtn.interactable = false;
+        _joinTournamentBtn.GetComponentInChildren<TextMeshProUGUI>().SetText("Tournament Ended");
+
+    }
+    /*
+      first;
+      second;
+      third;
+      fourToTen;
+      elevenToTwentyFive;
+      twentySixToFifty;
+      fiftyOneToHundred;
+     */
+    private float _GetPrizePoolShare(int rank)
+    {
+
+        if (rank >= 51 && rank <= 100) return GetShare(5f / (100f - 50f));
+        if (rank >= 26 && rank <= 50) return GetShare(8f / (50f - 25f));
+        if (rank >= 11 && rank <= 25) return GetShare(16f / (25f - 10f));
+        if (rank >= 4 && rank <= 10) return GetShare(20f / (10f - 3f));
+        if (rank == 3) return GetShare(20f);
+        if (rank == 2) return GetShare(15f);
+        if (rank == 1) return GetShare(25f);
+
+        return 0; //not eligible for Prizepool
+        float GetShare(float percent)
+        {
+            return (_prizePoolAmount * percent) / 100f;
+        }
     }
     private void _SetTxHash(string txHash)
     {

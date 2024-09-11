@@ -9,13 +9,15 @@ public class TournamentElement : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _rankTxt;
     [SerializeField] private TextMeshProUGUI _usernameTxt;
     [SerializeField] private TextMeshProUGUI _stepsCountTxt;
+    [SerializeField] private TextMeshProUGUI _rewardTxt;
     [SerializeField] private Image _myBg;
 
-    public void Init(Participant participant, int rank, bool mine = false)
+    public void Init(Participant participant, int rank, float prizeAmount, bool mine = false)
     {
         _rankTxt.SetText(rank.ToString());
         _usernameTxt.SetText(mine ? "YOU" : participant.username);
         _stepsCountTxt.SetText(participant.steps.ToString());
+        _rewardTxt.SetText(prizeAmount.ToString());
         _myBg.gameObject.SetActive(mine);
     }
 }
