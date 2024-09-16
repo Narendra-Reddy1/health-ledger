@@ -1,9 +1,12 @@
+#define TRON_CHAIN
+
 using System.Net.Http;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
+using BenStudios.EventSystem;
 
 public static class NetworkHandler
 {
@@ -24,7 +27,11 @@ public static class NetworkHandler
         public Method method;
     }
     //public const string BASE_URL = "http://localhost:3000";
+#if TRON_CHAIN
     public const string BASE_URL = "https://grand-uniformly-moray.ngrok-free.app";
+#else  //ETH
+    public const string BASE_URL = "https://grand-uniformly-moray.ngrok-free.app";
+#endif
     static readonly HttpClient client = new HttpClient();
 
 
@@ -46,6 +53,10 @@ public static class NetworkHandler
         {
             Debug.Log(e);
             Debug.Log($"Status code: {response.StatusCode} phrase: {response.ReasonPhrase}");
+            if (e.Message.Contains("Error: AggregateError"))
+            {
+                GlobalEventHandler.TriggerEvent(EventID.OnAggregatorErrorEncountered);
+            }
             onFail?.Invoke();
         }
     }
@@ -54,16 +65,22 @@ public static class NetworkHandler
     {
         HttpRequestMessage request = _GetHttpRequest(url, requestData);
         HttpResponseMessage response = await client.SendAsync(request);
+        string data = string.Empty;
         try
         {
             response.EnsureSuccessStatusCode();
-            string data = await response.Content.ReadAsStringAsync();
+            data = await response.Content.ReadAsStringAsync();
             onSuccess?.Invoke(JsonUtility.FromJson<T>(data));
         }
         catch (Exception e)
         {
             Debug.Log(e);
             Debug.Log($"Status code: {response.StatusCode} phrase: {response.ReasonPhrase}");
+            var err = JsonUtility.FromJson<BaseErrorResponse>(data);
+            if (err.message.Contains("Error: AggregateError"))
+            {
+                GlobalEventHandler.TriggerEvent(EventID.OnAggregatorErrorEncountered);
+            }
             onFail?.Invoke();
         }
     }
@@ -71,10 +88,11 @@ public static class NetworkHandler
     {
         HttpRequestMessage request = _GetHttpRequest(url, requestData);
         HttpResponseMessage response = await client.SendAsync(request);
+        string data = string.Empty;
         try
         {
             response.EnsureSuccessStatusCode();
-            string data = await response.Content.ReadAsStringAsync();
+             data = await response.Content.ReadAsStringAsync();
             onSuccess?.Invoke(JsonUtility.FromJson<T>(data));
 
         }
@@ -82,6 +100,11 @@ public static class NetworkHandler
         {
             Debug.Log(e);
             Debug.Log($"Status code: {response.StatusCode} phrase: {response.ReasonPhrase}");
+            var err = JsonUtility.FromJson<BaseErrorResponse>(data);
+            if (err.message.Contains("Error: AggregateError"))
+            {
+                GlobalEventHandler.TriggerEvent(EventID.OnAggregatorErrorEncountered);
+            }
             onFail?.Invoke(e.ToString());
         }
     }
@@ -102,6 +125,11 @@ public static class NetworkHandler
         {
             Debug.Log(e);
             Debug.Log($"Status code: {response.StatusCode} phrase: {response.ReasonPhrase}");
+            var err = JsonUtility.FromJson<BaseErrorResponse>(data);
+            if(err.message.Contains("Error: AggregateError"))
+            {
+                GlobalEventHandler.TriggerEvent(EventID.OnAggregatorErrorEncountered);
+            }
             onFail?.Invoke(JsonUtility.FromJson<T2>(data));
         }
     }
@@ -124,6 +152,11 @@ public static class NetworkHandler
         {
             Debug.Log(e);
             Debug.Log($"Status code: {response.StatusCode} phrase: {response.ReasonPhrase}");
+            var err = JsonUtility.FromJson<BaseErrorResponse>(data);
+            if (err.message.Contains("Error: AggregateError"))
+            {
+                GlobalEventHandler.TriggerEvent(EventID.OnAggregatorErrorEncountered);
+            }
             onFail?.Invoke(data);
         }
     }
@@ -145,6 +178,11 @@ public static class NetworkHandler
         {
             Debug.Log(e);
             Debug.Log($"Status code: {response.StatusCode} phrase: {response.ReasonPhrase}");
+            var err = JsonUtility.FromJson<BaseErrorResponse>(data);
+            if (err.message.Contains("Error: AggregateError"))
+            {
+                GlobalEventHandler.TriggerEvent(EventID.OnAggregatorErrorEncountered);
+            }
             onFail?.Invoke(response);
         }
     }

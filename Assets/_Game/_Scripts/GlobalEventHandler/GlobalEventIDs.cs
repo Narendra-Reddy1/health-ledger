@@ -9,6 +9,8 @@ namespace BenStudios.EventSystem
         OnFloorButtonClicked,
         OnStepsUploadedToSever,
         OnStepsUploadedToBlockchain,
+        OnAggregatorErrorEncountered,
+
 
         //Core
         OnStepCountUpdated,
