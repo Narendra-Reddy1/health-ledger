@@ -7,8 +7,10 @@ using UnityEngine;
 public class UserDataHandler : MonoBehaviour
 {
     private int _stepsCounter;
+    private int _prevUpdateStepsCounter;
     private int _totalStepsInTheSession;
     private int _tournamentSteps;
+    private int _prevUpdateSteps;
 
     private float _stepsCountPerDay = 1_500f;//this will update based on the user activity
 
@@ -18,7 +20,6 @@ public class UserDataHandler : MonoBehaviour
 
     public bool isParticipatedInTournament;
     public int participatedInTournamentId;
-
 
     public static UserDataHandler instance { get; private set; }
     private void Awake()
@@ -49,7 +50,7 @@ public class UserDataHandler : MonoBehaviour
         if (!isParticipatedInTournament) return;
         NetworkHandler.Fetch("/tournament/record-steps", (data) =>
         {
-            _tournamentSteps = 0;
+            _prevUpdateSteps = _tournamentSteps;
             //trigger event to update the leaderboard element.
 
         }, (err) =>
@@ -58,7 +59,7 @@ public class UserDataHandler : MonoBehaviour
         }, new NetworkHandler.RequestData
         {
             method = NetworkHandler.Method.POST,
-            body = "{\"steps\":" + _tournamentSteps + ",\"tournamentId\":" + 0 + ",\"username\":\"" + userData.user.username + "\"}"
+            body = "{\"steps\":" + (_tournamentSteps - _prevUpdateSteps) + ",\"tournamentId\":" + 0 + ",\"username\":\"" + userData.user.username + "\"}"
         });
     }
     private void _UploadToServer()
@@ -67,7 +68,7 @@ public class UserDataHandler : MonoBehaviour
         string url = $"/{userData.user.username}/record-steps";
         NetworkHandler.Fetch(url, (data) =>
         {
-            _stepsCounter = 0;
+            _prevUpdateStepsCounter = _stepsCounter;
             //update ui event
         }, (err) =>
         {
@@ -75,7 +76,7 @@ public class UserDataHandler : MonoBehaviour
         }, new NetworkHandler.RequestData
         {
             method = NetworkHandler.Method.POST,
-            body = "{\"steps\":" + _stepsCounter + "}"
+            body = "{\"steps\":" + (_stepsCounter - _prevUpdateStepsCounter) + "}"
         });
     }
 

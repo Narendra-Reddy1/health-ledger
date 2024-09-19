@@ -99,7 +99,7 @@ namespace BenStudios
             NetworkHandler.Fetch(url, (data) =>
             {
                 WalletBalance walletBalance = JsonUtility.FromJson<WalletBalance>(data);
-                _balanceTxt.SetText(walletBalance.balances.tokens.ToString());
+                _balanceTxt.SetText($"{walletBalance.balances.tokens.ToString()} HLT");
                 _publicKeyTxt.SetText(walletBalance.publicKey);
                 GlobalEventHandler.TriggerEvent(EventID.OnToggleLoadingPanel, false);
             }, (err) =>
@@ -150,7 +150,7 @@ namespace BenStudios
                 UserData wallet = JsonUtility.FromJson<UserData>(walletData);
                 _walletMainPage.gameObject.SetActive(true);
                 _publicKeyTxt.SetText(wallet.user.publicKey);
-                _balanceTxt.SetText(wallet.user.balance.ToString());
+                _balanceTxt.SetText($"{wallet.user.balance.ToString()} HLT");
                 _generateWalletPanel.DOScale(0, 0.3f).onComplete += () =>
                 {
                     _generateWalletPanel.gameObject.SetActive(false);
@@ -240,7 +240,7 @@ namespace BenStudios
                 _withdrawErrorTxt.SetText("Amount should be a positive number");
                 _isAmountValid = false;
             }
-            else if (value > UserDataHandler.instance.userData.user.balance)
+            else if (value > float.Parse(UserDataHandler.instance.userData.user.balance))
             {
                 Debug.Log("Insufficent balance");
                 _withdrawErrorTxt.SetText("Insufficient balance");

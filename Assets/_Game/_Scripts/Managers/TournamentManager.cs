@@ -124,8 +124,10 @@ public class TournamentManager : MonoBehaviour
         if (!PlayerprefsHandler.GetPlayerPrefsBool(PlayerPrefKeys.hasWallet))
         {
             Debug.LogError("Please create wallet to join tournaments");
+            GlobalEventHandler.TriggerEvent(EventID.OnJoinTournamentWithoutWallet);
             GlobalEventHandler.TriggerEvent(EventID.OnToggleLoadingPanel, false);
             //Show a popup here
+
             return;
         }
         NetworkHandler.Fetch("/tournament/join", (data) =>
@@ -214,6 +216,7 @@ public class TournamentManager : MonoBehaviour
     }
     private void _SetTxHash(string txHash)
     {
+        if (string.IsNullOrEmpty(txHash) || string.IsNullOrWhiteSpace(txHash)) return;
         var start = txHash.Substring(0, 4);
         var end = txHash.Substring(txHash.Length - 5, 5);
         _tournamentTxHash.SetText(start + "...." + end);
