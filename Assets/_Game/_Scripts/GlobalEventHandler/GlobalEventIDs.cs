@@ -10,6 +10,7 @@ namespace BenStudios.EventSystem
         OnStepsUploadedToSever,
         OnStepsUploadedToBlockchain,
         OnAggregatorErrorEncountered,
+        OnJoinTournamentWithoutWallet,
 
 
         //Core

@@ -19,7 +19,7 @@ public class Main : MonoBehaviour
         {
             var userData = JsonUtility.FromJson<UserData>(data);
             UserDataHandler.instance.userData = userData;
-            if (userData.user.publicKey != null)
+            if (!string.IsNullOrEmpty(userData.user.publicKey))
             {
                 PlayerprefsHandler.SetPlayerPrefsBool(PlayerPrefKeys.hasWallet, true);
                 UserDataHandler.instance.isParticipatedInTournament = userData.user.tournaments.Any(

@@ -92,7 +92,7 @@ public static class NetworkHandler
         try
         {
             response.EnsureSuccessStatusCode();
-             data = await response.Content.ReadAsStringAsync();
+            data = await response.Content.ReadAsStringAsync();
             onSuccess?.Invoke(JsonUtility.FromJson<T>(data));
 
         }
@@ -126,10 +126,11 @@ public static class NetworkHandler
             Debug.Log(e);
             Debug.Log($"Status code: {response.StatusCode} phrase: {response.ReasonPhrase}");
             var err = JsonUtility.FromJson<BaseErrorResponse>(data);
-            if(err.message.Contains("Error: AggregateError"))
-            {
-                GlobalEventHandler.TriggerEvent(EventID.OnAggregatorErrorEncountered);
-            }
+            if (err != null)
+                if (err.message.Contains("Error: AggregateError"))
+                {
+                    GlobalEventHandler.TriggerEvent(EventID.OnAggregatorErrorEncountered);
+                }
             onFail?.Invoke(JsonUtility.FromJson<T2>(data));
         }
     }
@@ -153,10 +154,11 @@ public static class NetworkHandler
             Debug.Log(e);
             Debug.Log($"Status code: {response.StatusCode} phrase: {response.ReasonPhrase}");
             var err = JsonUtility.FromJson<BaseErrorResponse>(data);
-            if (err.message.Contains("Error: AggregateError"))
-            {
-                GlobalEventHandler.TriggerEvent(EventID.OnAggregatorErrorEncountered);
-            }
+            if (err != null)
+                if (err.message.Contains("Error: AggregateError"))
+                {
+                    GlobalEventHandler.TriggerEvent(EventID.OnAggregatorErrorEncountered);
+                }
             onFail?.Invoke(data);
         }
     }
@@ -237,7 +239,7 @@ public class User
     public string username;
     public string stepsCount;
     public string publicKey;
-    public float balance;
+    public string balance;
     public List<TournamentEntry> tournaments;
 }
 

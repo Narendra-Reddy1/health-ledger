@@ -58,7 +58,7 @@ namespace BenStudios
               };
         }
 
-        private void _OnClick()
+        public void _OnClick()
         {
             if (_isSelected) return;
             Activate();
