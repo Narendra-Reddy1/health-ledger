@@ -6,6 +6,8 @@ using TMPro;
 using UnityEngine.UI;
 using System.Text.RegularExpressions;
 using BenStudios.EventSystem;
+using System;
+using NaughtyAttributes;
 
 namespace BenStudios
 {
@@ -39,11 +41,6 @@ namespace BenStudios
 
         }
 
-        private void _TogglePasswordVisibility(bool value)
-        {
-            _password.contentType = value ? TMP_InputField.ContentType.Standard : TMP_InputField.ContentType.Password;
-            _password.Select();
-        }
 
         private void Start()
         {
@@ -78,16 +75,16 @@ namespace BenStudios
              {
                  var loginData = JsonUtility.FromJson<UserData>(userData);
                  UserDataHandler.instance.userData = loginData;
+
+                 PlayerprefsHandler.SetPlayerPrefsAsString(PlayerPrefKeys.authToken, loginData.user.token);
+                 PlayerprefsHandler.SetSecurePlayerPrefsAsString(PlayerPrefKeys.fallbackToken, loginData.user.token);
                  PlayerprefsHandler.SetPlayerPrefsAsString(PlayerPrefKeys.username, loginData.user.username);
 
-                 //disable login screen 
-                 //show homescreen
                  _ToggleLoadingScreen(false);
                  PlayerprefsHandler.SetPlayerPrefsBool(PlayerPrefKeys.isLoggedIn, true);
-                 if (loginData.user.publicKey != null)
-                 {
+
+                 if (!string.IsNullOrEmpty(loginData.user.publicKey))
                      PlayerprefsHandler.SetPlayerPrefsBool(PlayerPrefKeys.hasWallet, true);
-                 }
                  gameObject.SetActive(false);
 
              }, (err) =>
@@ -131,6 +128,8 @@ namespace BenStudios
                 //disable login screen show the home page
                 var signupData = JsonUtility.FromJson<UserData>(userData);
                 UserDataHandler.instance.userData = signupData;
+                PlayerprefsHandler.SetPlayerPrefsAsString(PlayerPrefKeys.authToken, signupData.user.token);
+                PlayerprefsHandler.SetSecurePlayerPrefsAsString(PlayerPrefKeys.fallbackToken, signupData.user.token);
                 PlayerprefsHandler.SetPlayerPrefsAsString(PlayerPrefKeys.username, signupData.user.username);
                 PlayerprefsHandler.SetPlayerPrefsBool(PlayerPrefKeys.isLoggedIn, true);
                 _ToggleLoadingScreen(false);
@@ -169,5 +168,13 @@ namespace BenStudios
             _login.interactable = !value;
             _signUp.interactable = !value;
         }
+        private void _TogglePasswordVisibility(bool value)
+        {
+            _password.contentType = value ? TMP_InputField.ContentType.Standard : TMP_InputField.ContentType.Password;
+            _password.Select();
+        }
+
+
+
     }
 }
