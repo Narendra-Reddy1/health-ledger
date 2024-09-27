@@ -1,5 +1,3 @@
-#define TRON_CHAIN
-
 using System.Net.Http;
 using System;
 using System.Collections;
@@ -27,10 +25,10 @@ public static class NetworkHandler
         public Method method;
     }
     //public const string BASE_URL = "http://localhost:3000";
-#if TRON_CHAIN
-    public const string BASE_URL = "https://grand-uniformly-moray.ngrok-free.app";
+#if TRON
+    public const string BASE_URL = "https://health-ledger-backend.vercel.app";
 #else  //ETH
-    public const string BASE_URL = "https://grand-uniformly-moray.ngrok-free.app";
+    public const string BASE_URL = "https://health-ledger-backend.vercel.app";
 #endif
     static readonly HttpClient client = new HttpClient();
 
@@ -40,9 +38,9 @@ public static class NetworkHandler
 
     }
 
-    public static async void Fetch(string url, Action onSuccess, Action onFail, RequestData requestData = null)
+    public static async void Fetch(string url, Action onSuccess, Action onFail, RequestData requestData = null, bool isCritical = false)
     {
-        HttpRequestMessage request = _GetHttpRequest(url, requestData);
+        HttpRequestMessage request = _GetHttpRequest(url, requestData, isCritical);
         HttpResponseMessage response = await client.SendAsync(request);
         try
         {
@@ -61,9 +59,9 @@ public static class NetworkHandler
         }
     }
 
-    public static async void Fetch<T>(string url, Action<T> onSuccess, Action onFail, RequestData requestData = null)
+    public static async void Fetch<T>(string url, Action<T> onSuccess, Action onFail, RequestData requestData = null, bool isCritical = false)
     {
-        HttpRequestMessage request = _GetHttpRequest(url, requestData);
+        HttpRequestMessage request = _GetHttpRequest(url, requestData, isCritical);
         HttpResponseMessage response = await client.SendAsync(request);
         string data = string.Empty;
         try
@@ -84,9 +82,9 @@ public static class NetworkHandler
             onFail?.Invoke();
         }
     }
-    public static async void Fetch<T>(string url, Action<T> onSuccess, Action<string> onFail, RequestData requestData = null)
+    public static async void Fetch<T>(string url, Action<T> onSuccess, Action<string> onFail, RequestData requestData = null, bool isCritical = false)
     {
-        HttpRequestMessage request = _GetHttpRequest(url, requestData);
+        HttpRequestMessage request = _GetHttpRequest(url, requestData, isCritical);
         HttpResponseMessage response = await client.SendAsync(request);
         string data = string.Empty;
         try
@@ -108,9 +106,9 @@ public static class NetworkHandler
             onFail?.Invoke(e.ToString());
         }
     }
-    public static async void Fetch<T1, T2>(string url, Action<T1> onSuccess, Action<T2> onFail, RequestData requestData = null)
+    public static async void Fetch<T1, T2>(string url, Action<T1> onSuccess, Action<T2> onFail, RequestData requestData = null, bool isCritical = false)
     {
-        HttpRequestMessage request = _GetHttpRequest(url, requestData);
+        HttpRequestMessage request = _GetHttpRequest(url, requestData, isCritical);
         HttpResponseMessage response = await client.SendAsync(request);
         string data = string.Empty;
         try
@@ -134,9 +132,9 @@ public static class NetworkHandler
             onFail?.Invoke(JsonUtility.FromJson<T2>(data));
         }
     }
-    public static async void Fetch(string url, Action<string> onSuccess, Action<string> onFail, RequestData requestData = null)
+    public static async void Fetch(string url, Action<string> onSuccess, Action<string> onFail, RequestData requestData = null, bool isCritical = false)
     {
-        HttpRequestMessage request = _GetHttpRequest(url, requestData);
+        HttpRequestMessage request = _GetHttpRequest(url, requestData, isCritical);
         Debug.Log("body \n " + requestData.body);
         HttpResponseMessage response = await client.SendAsync(request);
         string data = string.Empty;
@@ -145,6 +143,7 @@ public static class NetworkHandler
 
             data = await response.Content.ReadAsStringAsync();
             Debug.Log(data);
+
             response.EnsureSuccessStatusCode();
             onSuccess?.Invoke(data);
 
@@ -162,9 +161,9 @@ public static class NetworkHandler
             onFail?.Invoke(data);
         }
     }
-    public static async void Fetch2(string url, Action<HttpResponseMessage> onSuccess, Action<HttpResponseMessage> onFail, RequestData requestData = null)
+    public static async void Fetch2(string url, Action<HttpResponseMessage> onSuccess, Action<HttpResponseMessage> onFail, RequestData requestData = null, bool isCritical = false)
     {
-        HttpRequestMessage request = _GetHttpRequest(url, requestData);
+        HttpRequestMessage request = _GetHttpRequest(url, requestData, isCritical);
         HttpResponseMessage response = await client.SendAsync(request);
         string data = string.Empty;
         try
@@ -189,7 +188,8 @@ public static class NetworkHandler
         }
     }
 
-    private static HttpRequestMessage _GetHttpRequest(string url, RequestData requestData)
+
+    private static HttpRequestMessage _GetHttpRequest(string url, RequestData requestData, bool isCritical = false)
     {
         HttpRequestMessage request = new HttpRequestMessage();
         switch (requestData.method)
@@ -212,15 +212,67 @@ public static class NetworkHandler
         }
         if (requestData.body != null)
             request.Content = new StringContent(requestData.body, System.Text.Encoding.UTF8, requestData.contentType);
-        if (requestData.headers != null)
-            foreach (var kvp in requestData.headers)
-            {
-                request.Headers.Add(kvp.Key, kvp.Value);
-            }
+        if (requestData.headers == null)
+            requestData.headers = new Dictionary<string, string>();
+
+        string token = PlayerprefsHandler.GetPlayerPrefsString(PlayerPrefKeys.authToken);
+        if (IsTokenExpired(token) && isCritical)
+            requestData.headers.Add("authorization", PlayerprefsHandler.GetPlayerPrefsString(PlayerPrefKeys.fallbackToken));
+        foreach (var kvp in requestData.headers)
+        {
+            request.Headers.Add(kvp.Key, kvp.Value);
+        }
         request.RequestUri = new Uri(BASE_URL + url);
         return request;
 
     }
+
+
+    public static bool IsTokenExpired(string token)
+    {
+        //just to be sure the token won't expire within a minute or two
+        long graceValue = 120;
+
+        //string token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InIyZWR3dzF5IiwicHVibGljS2V5IjoiMHgiLCJpYXQiOjE3MjczNjEyNDIsImV4cCI6MTcyNzk2NjA0Mn0.YZAPMRhkSe3U81uFVjEkwuZHyWAij2o96HvWzERSut4";
+        // Split the token into its parts (Header, Payload, Signature)
+        string[] tokenParts = token.Split('.');
+        if (tokenParts.Length < 2)
+        {
+            throw new System.ArgumentException("Invalid JWT token");
+        }
+
+        // Decode the payload (which contains the 'exp' field)
+        string payload = Base64UrlDecode(tokenParts[1]);
+        Newtonsoft.Json.Linq.JObject payloadData = Newtonsoft.Json.Linq.JObject.Parse(payload);
+
+        // Extract the 'exp' field, which is a Unix timestamp
+        long exp = payloadData["exp"].ToObject<long>();
+
+        // Convert the expiration time to DateTime
+        DateTime expirationTime = DateTimeOffset.FromUnixTimeSeconds(exp + graceValue).UtcDateTime;
+
+        // Compare the expiration time with the current time
+        return expirationTime < DateTime.UtcNow;
+    }
+
+    // Helper method to decode the Base64Url-encoded JWT part
+    private static string Base64UrlDecode(string input)
+    {
+        // Replace URL-safe characters and pad with '=' characters
+        string output = input.Replace('-', '+').Replace('_', '/');
+        switch (output.Length % 4)
+        {
+            case 2: output += "=="; break;
+            case 3: output += "="; break;
+        }
+
+        // Convert the Base64 string to a byte array
+        var byteArray = Convert.FromBase64String(output);
+
+        // Convert byte array to string
+        return System.Text.Encoding.UTF8.GetString(byteArray);
+    }
+
 }
 
 
@@ -236,6 +288,8 @@ public class UserData
 [Serializable]
 public class User
 {
+    public string token;
+    public string fallbackToken;
     public string username;
     public string stepsCount;
     public string publicKey;
@@ -351,6 +405,21 @@ public class JoinTournamentResult
     public string txHash;
     public int tournamentId;
     public int stepsCount;
+}
+[Serializable]
+public class BlockchainRecordStepsResult
+{
+
+    public string txHash;
+    public int tournamentId;
+    public int updatedSteps;
+    public int addedStepsCount;
+}
+[Serializable]
+public class RecordStepsResult
+{
+    public int updatedSteps;
+    public int addedStepsCount;
 }
 
 #endregion Tournament

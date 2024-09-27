@@ -6,15 +6,16 @@ using UnityEngine;
 public class Main : MonoBehaviour
 {
     [SerializeField] private GameObject _loginScreen;
+    [SerializeField] private GameObject _sessionExpiredMsg;
     private void Awake()
     {
+
         if (!PlayerprefsHandler.GetPlayerPrefsBool(PlayerPrefKeys.isLoggedIn))
         {
             _loginScreen.SetActive(true);
             return;
         }
-        string username = PlayerprefsHandler.GetPlayerPrefsString(PlayerPrefKeys.username);
-        string url = $"/{username}/user-info";
+        string url = $"/user/user-info";
         NetworkHandler.Fetch(url, (data) =>
         {
             var userData = JsonUtility.FromJson<UserData>(data);
@@ -25,12 +26,16 @@ public class Main : MonoBehaviour
                 UserDataHandler.instance.isParticipatedInTournament = userData.user.tournaments.Any(
                     x => x.tournamentId == PlayerprefsHandler.GetPlayerPrefsInt(PlayerPrefKeys.currentRunningTournament, 0));
             }
-        }, (err) =>
-  {
-      Debug.LogError($"Failed to fetch user data <b> Main </b> {err}");
-  }, new NetworkHandler.RequestData
-  {
-      method = NetworkHandler.Method.GET
-  });
+        },
+        (err) =>
+        {
+            Debug.LogError($"Failed to fetch user data <b> Main </b> {err}");
+
+
+        },
+        new NetworkHandler.RequestData
+        {
+            method = NetworkHandler.Method.GET
+        });
     }
 }

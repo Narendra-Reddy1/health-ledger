@@ -29,9 +29,11 @@ public class TournamentManager : MonoBehaviour
     private string _txHash;
     private ObjectPool<TournamentElement> _pool;
     private List<TournamentElement> _activeElements = new List<TournamentElement>();
-
+#if TRON
+    private const string EXPLORER_BASE_URL = "https://nile.tronscan.org/#/transaction/";//later refactor this to use based on the selected blockchain
+#else
     private const string EXPLORER_BASE_URL = "https://www.oklink.com/amoy/address";//later refactor this to use based on the selected blockchain
-
+#endif
     private void Awake()
     {
         _pool = new ObjectPool<TournamentElement>(() =>
@@ -63,11 +65,13 @@ public class TournamentManager : MonoBehaviour
     private void _CreateLeaderboard()
     {
         GlobalEventHandler.TriggerEvent(EventID.OnToggleLoadingPanel, true);
-        int tournamentId = 0;
-        NetworkHandler.Fetch($"/tournament/get/{tournamentId}", (data) =>
+        //int tournamentId = 0;
+        NetworkHandler.Fetch($"/tournament/get-latest-tournament", (data) =>
         {
             _tournament = JsonUtility.FromJson<Tournament>(data);
             _prizeDistributionID = _tournament.data.prizeDistributionId;
+            _tournamentId = _tournament.data.tournamentId;
+            _tournamentIdTxt.SetText(_tournamentId.ToString());
             _txHash = _tournament.data.txHash;
             _SetTxHash(_txHash);
             _endTimeStamp = _tournament.data.endTime;
@@ -147,7 +151,7 @@ public class TournamentManager : MonoBehaviour
         }, new NetworkHandler.RequestData
         {
             method = NetworkHandler.Method.POST,
-            body = "{\"username\":\"" + UserDataHandler.instance.userData.user.username + "\",\"tournamentId\":" + _tournamentId + "}"
+            body = "{\"tournamentId\":" + _tournamentId + "}"
         });
 
     }

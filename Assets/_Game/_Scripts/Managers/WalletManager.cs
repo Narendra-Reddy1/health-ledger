@@ -2,6 +2,7 @@ using BenStudios.EventSystem;
 using DG.Tweening;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using TMPro;
 using UnityEngine;
@@ -93,9 +94,7 @@ namespace BenStudios
         private void _RefreshBalance()
         {
             GlobalEventHandler.TriggerEvent(EventID.OnToggleLoadingPanel, true);
-            string username = PlayerprefsHandler.GetPlayerPrefsString(PlayerPrefKeys.username);
-            if (username.Length <= 0) return;
-            string url = $"/{username}/get-balance";
+            string url = $"/user/get-balance";
             NetworkHandler.Fetch(url, (data) =>
             {
                 WalletBalance walletBalance = JsonUtility.FromJson<WalletBalance>(data);
@@ -108,7 +107,7 @@ namespace BenStudios
                 GlobalEventHandler.TriggerEvent(EventID.OnToggleLoadingPanel, false);
             }, new NetworkHandler.RequestData
             {
-                method = NetworkHandler.Method.GET
+                method = NetworkHandler.Method.GET,
             });
         }
 
@@ -141,9 +140,7 @@ namespace BenStudios
             }
             GlobalEventHandler.TriggerEvent(EventID.OnToggleLoadingPanel, true);
             _generateWallet.interactable = false;
-            string username = PlayerprefsHandler.GetPlayerPrefsString(PlayerPrefKeys.username);
-            if (username.Length <= 0) return;
-            string url = $"/{username}/create-wallet";
+            string url = $"/user/create-wallet";
             //RIGHT NOW Anyone can create a wallet to any user Try to add some authentication/Authorization to secure
             NetworkHandler.Fetch(url, (walletData) =>
             {
@@ -274,27 +271,17 @@ namespace BenStudios
         }
         private void _WithdrawBalance()
         {
-            string username = PlayerprefsHandler.GetPlayerPrefsString(PlayerPrefKeys.username);
-            string url = $"/{username}/withdraw";
+            string url = $"/user/withdraw";
             string passkey = _withdrawPinField.text;
             string toAddress = _toAddressField.text;
             float amount = float.Parse(_withdrawAmountField.text);
-            //if (!_IsAddressValid(toAddress))
-            //{
-            //    Debug.LogError("Invalid wallet address");
-            //    return;
-            //}
-            //if (_IsPinCorrect())
-            //{
-            //    Debug.Log("Incorrect PIN");
-            //    return;
-            //}
 
             NetworkHandler.Fetch(url, (data) =>
             {
-
+                //show success popup with txID.
             }, (err) =>
             {
+                //show failed popup with reason.
 
             }, new NetworkHandler.RequestData
             {
@@ -303,7 +290,17 @@ namespace BenStudios
             });
         }
 
-        private bool _IsAddressValid(string address)
+        private bool _IsAddressValid(string address, Chain chain = Chain.TRON)
+        {
+            return chain switch
+            {
+                Chain.TRON => IsTronAddressValid(address),
+                Chain.ETH => IsEthAddressValid(address),
+                _ => false,
+            };
+        }
+
+        private bool IsEthAddressValid(string address)
         {
             // Check if the address starts with "0x" and is 42 characters long
             if (string.IsNullOrEmpty(address) || address.Length != 42 || !address.StartsWith("0x"))
@@ -313,7 +310,24 @@ namespace BenStudios
         }
 
 
+        // Regular expression for Base58 (used by TRON addresses)
+
+        // Method to validate TRON wallet address
+        public static bool IsTronAddressValid(string address)
+        {
+            int AddressLength = 34;
+            Regex Base58Regex = new Regex("^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]+$");
+            if (string.IsNullOrEmpty(address) || address[0] != 'T' || address.Length != AddressLength)
+                return false;
+            return Base58Regex.IsMatch(address);
+        }
+
         #endregion Withdraw
 
+    }
+    public enum Chain
+    {
+        TRON,
+        ETH
     }
 }
