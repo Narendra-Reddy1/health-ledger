@@ -33,7 +33,7 @@ public class UserDataHandler : MonoBehaviour
     private void OnEnable()
     {
         InvokeRepeating(nameof(_UploadToBlockchain), 45, 45);
-        InvokeRepeating(nameof(_UploadToServer), 30, 30);
+        InvokeRepeating(nameof(_UploadToServer), 60, 60);
         GlobalEventHandler.AddListener(EventID.OnStepCountUpdated, Callback_On_Step_Count);
     }
     private void OnDisable()
@@ -50,7 +50,8 @@ public class UserDataHandler : MonoBehaviour
         if (!isParticipatedInTournament) return;
         NetworkHandler.Fetch("/tournament/record-steps", (data) =>
         {
-            _prevUpdateSteps = _tournamentSteps;
+            var result = JsonUtility.FromJson<RecordStepsResult>(data);
+            _prevUpdateSteps += result.addedStepsCount;
             //trigger event to update the leaderboard element.
 
         }, (err) =>
@@ -59,16 +60,17 @@ public class UserDataHandler : MonoBehaviour
         }, new NetworkHandler.RequestData
         {
             method = NetworkHandler.Method.POST,
-            body = "{\"steps\":" + (_tournamentSteps - _prevUpdateSteps) + ",\"tournamentId\":" + 0 + ",\"username\":\"" + userData.user.username + "\"}"
-        });
+            body = "{\"steps\":" + (_tournamentSteps - _prevUpdateSteps) + ",\"tournamentId\":" + 0 + "}"
+        }, true);
     }
     private void _UploadToServer()
     {
         int currentRunningTournamentId = PlayerprefsHandler.GetPlayerPrefsInt(PlayerPrefKeys.currentRunningTournament);
-        string url = $"/{userData.user.username}/record-steps";
+        string url = $"/user/record-steps";
         NetworkHandler.Fetch(url, (data) =>
         {
-            _prevUpdateStepsCounter = _stepsCounter;
+            var result = JsonUtility.FromJson<RecordStepsResult>(data);
+            _prevUpdateStepsCounter += result.addedStepsCount;
             //update ui event
         }, (err) =>
         {
@@ -77,7 +79,7 @@ public class UserDataHandler : MonoBehaviour
         {
             method = NetworkHandler.Method.POST,
             body = "{\"steps\":" + (_stepsCounter - _prevUpdateStepsCounter) + "}"
-        });
+        }, true);
     }
 
     private void Callback_On_Step_Count(object args)
@@ -87,7 +89,7 @@ public class UserDataHandler : MonoBehaviour
         {
             _stepsCounter += steps;
             _totalStepsInTheSession += steps;
-            if (isParticipatedInTournament) _tournamentSteps++;
+            if (isParticipatedInTournament) _tournamentSteps += steps;
             GlobalEventHandler.TriggerEvent(EventID.OnStepCountRecorded, _totalStepsInTheSession);
         }
     }
