@@ -22,7 +22,7 @@ public class TournamentManager : MonoBehaviour
     private long _endTimeStamp;
     private long _startTimeStamp;
 
-    private Tournament _tournament;
+    public static Tournament tournament { get; private set; }
     private int _prizePoolAmount;
     private int _prizeDistributionID;
     private int _tournamentId;
@@ -65,23 +65,22 @@ public class TournamentManager : MonoBehaviour
     private void _CreateLeaderboard()
     {
         GlobalEventHandler.TriggerEvent(EventID.OnToggleLoadingPanel, true);
-        //int tournamentId = 0;
-        NetworkHandler.Fetch($"/tournament/get-latest-tournament", (data) =>
+        NetworkHandler.FetchLatestTournamentData((tournamentData) =>
         {
-            _tournament = JsonUtility.FromJson<Tournament>(data);
-            _prizeDistributionID = _tournament.data.prizeDistributionId;
-            _tournamentId = _tournament.data.tournamentId;
+            tournament = tournamentData;
+            _prizeDistributionID = tournament.data.prizeDistributionId;
+            _tournamentId = tournament.data.tournamentId;
             _tournamentIdTxt.SetText(_tournamentId.ToString());
-            _txHash = _tournament.data.txHash;
+            _txHash = tournament.data.txHash;
             _SetTxHash(_txHash);
-            _endTimeStamp = _tournament.data.endTime;
-            _startTimeStamp = _tournament.data.startTime;
+            _endTimeStamp = tournament.data.endTime;
+            _startTimeStamp = tournament.data.startTime;
             string username = UserDataHandler.instance.userData.user.username;
-            _prizePoolAmount = _tournament.data.prizePool;
+            _prizePoolAmount = tournament.data.prizePool;
             _prizepoolTxt.SetText(_prizePoolAmount.ToString());
             _StartCountdown();
             _txHashBtn.onClick.AddListener(_OpenTournamentTxHash);
-            bool isParticipated = _tournament.data.participants.Any(x => x.username == username);
+            bool isParticipated = tournament.data.participants.Any(x => x.username == username);
 
             if (!isParticipated)
             {
@@ -93,11 +92,11 @@ public class TournamentManager : MonoBehaviour
             {
                 _fadingGroup.SetActive(false);
             }
-            var count = _tournament.data.participants.Count;
+            var count = tournament.data.participants.Count;
             for (int i = 0; (i < count) && (i < 100); i++)
             {
                 var element = _pool.Get();
-                element.Init(_tournament.data.participants[i], i + 1, _GetPrizePoolShare(i + 1), _tournament.data.participants[i].username == username);
+                element.Init(tournament.data.participants[i], i + 1, _GetPrizePoolShare(i + 1), tournament.data.participants[i].username == username);
                 _activeElements.Add(element);
             }
             GlobalEventHandler.TriggerEvent(EventID.OnToggleLoadingPanel, false);
@@ -105,9 +104,6 @@ public class TournamentManager : MonoBehaviour
         {
             Debug.LogError("Tournament Manager...CreateLeaderboard");
             GlobalEventHandler.TriggerEvent(EventID.OnToggleLoadingPanel, false);
-        }, new NetworkHandler.RequestData
-        {
-            method = NetworkHandler.Method.GET,
         });
     }
 
@@ -134,9 +130,9 @@ public class TournamentManager : MonoBehaviour
 
             return;
         }
-        NetworkHandler.Fetch("/tournament/join", (data) =>
+
+        NetworkHandler.JoinTournament(tournament.data.tournamentId, (data) =>
         {
-            var resultData = JsonUtility.FromJson<JoinTournamentResult>(data);
             _fadingGroup.SetActive(false);
             _joinTournamentBtn.onClick.RemoveAllListeners();
             //Show some popup wiht success info.
@@ -148,10 +144,6 @@ public class TournamentManager : MonoBehaviour
         {
             Debug.LogError("_JOin tournament");
             GlobalEventHandler.TriggerEvent(EventID.OnToggleLoadingPanel, false);
-        }, new NetworkHandler.RequestData
-        {
-            method = NetworkHandler.Method.POST,
-            body = "{\"tournamentId\":" + _tournamentId + "}"
         });
 
     }

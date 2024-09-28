@@ -7,10 +7,10 @@ using UnityEngine;
 public class UserDataHandler : MonoBehaviour
 {
     private int _stepsCounter;
-    private int _prevUpdateStepsCounter;
+    private int _prevUpdatedUserSteps;
     private int _totalStepsInTheSession;
     private int _tournamentSteps;
-    private int _prevUpdateSteps;
+    private int _prevUpdatedTournamentSteps;
 
     private float _stepsCountPerDay = 1_500f;//this will update based on the user activity
 
@@ -48,38 +48,28 @@ public class UserDataHandler : MonoBehaviour
     {
         int currentRunningTournamentId = PlayerprefsHandler.GetPlayerPrefsInt(PlayerPrefKeys.currentRunningTournament);
         if (!isParticipatedInTournament) return;
-        NetworkHandler.Fetch("/tournament/record-steps", (data) =>
-        {
-            var result = JsonUtility.FromJson<RecordStepsResult>(data);
-            _prevUpdateSteps += result.addedStepsCount;
-            //trigger event to update the leaderboard element.
+        NetworkHandler.RecordTournamentSteps(_tournamentSteps - _prevUpdatedTournamentSteps, (result) =>
+          {
+              _prevUpdatedTournamentSteps += result.addedStepsCount;
+              //trigger event to update the leaderboard element.
 
-        }, (err) =>
-        {
-            Debug.LogError("Failed to upload Steps to server!!");
-        }, new NetworkHandler.RequestData
-        {
-            method = NetworkHandler.Method.POST,
-            body = "{\"steps\":" + (_tournamentSteps - _prevUpdateSteps) + ",\"tournamentId\":" + 0 + "}"
-        }, true);
+          }, (err) =>
+          {
+              Debug.LogError("Failed to upload Steps to server!!");
+          });
     }
+
+
     private void _UploadToServer()
     {
-        int currentRunningTournamentId = PlayerprefsHandler.GetPlayerPrefsInt(PlayerPrefKeys.currentRunningTournament);
-        string url = $"/user/record-steps";
-        NetworkHandler.Fetch(url, (data) =>
+        NetworkHandler.RecordUserSteps(_stepsCounter - _prevUpdatedUserSteps, (result) =>
         {
-            var result = JsonUtility.FromJson<RecordStepsResult>(data);
-            _prevUpdateStepsCounter += result.addedStepsCount;
+            _prevUpdatedUserSteps += result.addedStepsCount;
             //update ui event
         }, (err) =>
         {
             Debug.LogError("Failed to upload Steps to server!!");
-        }, new NetworkHandler.RequestData
-        {
-            method = NetworkHandler.Method.POST,
-            body = "{\"steps\":" + (_stepsCounter - _prevUpdateStepsCounter) + "}"
-        }, true);
+        });
     }
 
     private void Callback_On_Step_Count(object args)

@@ -7,6 +7,8 @@ public class Main : MonoBehaviour
 {
     [SerializeField] private GameObject _loginScreen;
     [SerializeField] private GameObject _sessionExpiredMsg;
+    [SerializeField] private Credentials _encryptionCredentials;
+
     private void Awake()
     {
 
@@ -15,27 +17,30 @@ public class Main : MonoBehaviour
             _loginScreen.SetActive(true);
             return;
         }
-        string url = $"/user/user-info";
-        NetworkHandler.Fetch(url, (data) =>
+
+        ZPlayerPrefs.Initialize(_encryptionCredentials.EncryptionPassword, _encryptionCredentials.EncryptionSalt);
+        NetworkHandler.FetchUserProfile((userData) =>
         {
-            var userData = JsonUtility.FromJson<UserData>(data);
             UserDataHandler.instance.userData = userData;
             if (!string.IsNullOrEmpty(userData.user.publicKey))
             {
                 PlayerprefsHandler.SetPlayerPrefsBool(PlayerPrefKeys.hasWallet, true);
-                UserDataHandler.instance.isParticipatedInTournament = userData.user.tournaments.Any(
-                    x => x.tournamentId == PlayerprefsHandler.GetPlayerPrefsInt(PlayerPrefKeys.currentRunningTournament, 0));
+
+
+                //fetchLatestTournamentData...
+                NetworkHandler.FetchLatestTournamentData((data) =>
+                {
+                    UserDataHandler.instance.isParticipatedInTournament = userData.user.tournaments.Any(
+                        x => x.tournamentId == data.data.tournamentId);
+
+                });
             }
         },
         (err) =>
         {
             Debug.LogError($"Failed to fetch user data <b> Main </b> {err}");
-
-
-        },
-        new NetworkHandler.RequestData
-        {
-            method = NetworkHandler.Method.GET
+            _loginScreen.SetActive(true);
+            _sessionExpiredMsg.SetActive(true);
         });
     }
 }

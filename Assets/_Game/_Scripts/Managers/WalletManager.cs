@@ -94,20 +94,15 @@ namespace BenStudios
         private void _RefreshBalance()
         {
             GlobalEventHandler.TriggerEvent(EventID.OnToggleLoadingPanel, true);
-            string url = $"/user/get-balance";
-            NetworkHandler.Fetch(url, (data) =>
+            NetworkHandler.FetchBalance((walletBalance) =>
             {
-                WalletBalance walletBalance = JsonUtility.FromJson<WalletBalance>(data);
-                _balanceTxt.SetText($"{walletBalance.balances.tokens.ToString()} HLT");
+                _balanceTxt.SetText($"{walletBalance.balances.tokens} HLT");
                 _publicKeyTxt.SetText(walletBalance.publicKey);
                 GlobalEventHandler.TriggerEvent(EventID.OnToggleLoadingPanel, false);
             }, (err) =>
             {
                 Debug.LogError($"error with balance refresh {err}");
                 GlobalEventHandler.TriggerEvent(EventID.OnToggleLoadingPanel, false);
-            }, new NetworkHandler.RequestData
-            {
-                method = NetworkHandler.Method.GET,
             });
         }
 
@@ -142,9 +137,8 @@ namespace BenStudios
             _generateWallet.interactable = false;
             string url = $"/user/create-wallet";
             //RIGHT NOW Anyone can create a wallet to any user Try to add some authentication/Authorization to secure
-            NetworkHandler.Fetch(url, (walletData) =>
+            NetworkHandler.CreateWallet(_confirmSecretPin.text, (wallet) =>
             {
-                UserData wallet = JsonUtility.FromJson<UserData>(walletData);
                 _walletMainPage.gameObject.SetActive(true);
                 _publicKeyTxt.SetText(wallet.user.publicKey);
                 _balanceTxt.SetText($"{wallet.user.balance.ToString()} HLT");
@@ -154,10 +148,8 @@ namespace BenStudios
                 };
                 PlayerprefsHandler.SetPlayerPrefsBool(PlayerPrefKeys.hasWallet, true);
                 GlobalEventHandler.TriggerEvent(EventID.OnToggleLoadingPanel, false);
-
-            }, (err) =>
+            }, (error) =>
             {
-                BaseErrorResponse error = JsonUtility.FromJson<BaseErrorResponse>(err);
                 if (error != null)
                 {
                     if (error.message.Contains("Wallet already exists") || error.message.Contains("Secuirity Pin is short"))
@@ -168,20 +160,14 @@ namespace BenStudios
 
                 _generateWallet.interactable = true;
                 GlobalEventHandler.TriggerEvent(EventID.OnToggleLoadingPanel, false);
-            }, new NetworkHandler.RequestData
-            {
-                method = NetworkHandler.Method.POST,
-                body = "{\"passkey\":\"" + _confirmSecretPin.text + "\"}"
-
             });
         }
 
         private void _ConfigureWallet()
         {
             GlobalEventHandler.TriggerEvent(EventID.OnToggleLoadingPanel, true);
-            NetworkHandler.Fetch("/config/wallet", (data) =>
+            NetworkHandler.FetchWalletConfig((walletData) =>
             {
-                Wallet walletData = JsonUtility.FromJson<ConfigData>(data).wallet;
                 _withdraFeeTxt.SetText(walletData.withdraw.withdrawFee.ToString() + "%");
                 _dailyLimitTxt.SetText(walletData.withdraw.transactionLimits.perDay.max.ToString());
                 _minWithdrawLimitTxt.SetText(walletData.withdraw.transactionLimits.perTransaction.min.ToString());
@@ -191,9 +177,6 @@ namespace BenStudios
                 Debug.LogError("COnfigWallet......");
                 Debug.LogError(err);
                 GlobalEventHandler.TriggerEvent(EventID.OnToggleLoadingPanel, false);
-            }, new NetworkHandler.RequestData
-            {
-                method = NetworkHandler.Method.GET
             });
         }
 
@@ -271,22 +254,17 @@ namespace BenStudios
         }
         private void _WithdrawBalance()
         {
-            string url = $"/user/withdraw";
             string passkey = _withdrawPinField.text;
             string toAddress = _toAddressField.text;
             float amount = float.Parse(_withdrawAmountField.text);
 
-            NetworkHandler.Fetch(url, (data) =>
-            {
+            NetworkHandler.WithdrawBalance(passkey, amount, toAddress, () =>
+              {
                 //show success popup with txID.
-            }, (err) =>
+            }, () =>
             {
                 //show failed popup with reason.
 
-            }, new NetworkHandler.RequestData
-            {
-                method = NetworkHandler.Method.POST,
-                body = "{\"passkey\":\"" + passkey + "\",\"amount\":" + amount + ",\"toAddress\":\"" + toAddress + "\"}"
             });
         }
 

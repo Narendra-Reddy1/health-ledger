@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 using BenStudios.EventSystem;
+using System.Net.Http.Headers;
 
 public static class NetworkHandler
 {
@@ -33,10 +34,253 @@ public static class NetworkHandler
     static readonly HttpClient client = new HttpClient();
 
 
-    public static void Init()
+
+    public static async void SignUp(string username, string password, Action<UserData> onSuccess, Action<BaseErrorResponse> onFail = null)
     {
 
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, BASE_URL + "/sign-up");
+        string body = "{\"username\":\"" + username + "\",\"password\":\"" + password + " \"}";
+        SetBody(request, body);
+        HttpResponseMessage response = await client.SendAsync(request);
+        string data = string.Empty;
+        try
+        {
+            data = await response.Content.ReadAsStringAsync();
+            response.EnsureSuccessStatusCode();
+            onSuccess?.Invoke(JsonUtility.FromJson<UserData>(data));
+        }
+        catch (Exception e)
+        {
+            Debug.Log(e);
+            Debug.Log($"Status code: {response.StatusCode} phrase: {response.ReasonPhrase}");
+            if (e.Message.Contains("Error: AggregateError"))
+            {
+                GlobalEventHandler.TriggerEvent(EventID.OnAggregatorErrorEncountered);
+            }
+            onFail?.Invoke(JsonUtility.FromJson<BaseErrorResponse>(data));
+        }
     }
+    public static async void Login(string username, string password, Action<UserData> onSuccess, Action<BaseErrorResponse> onFail = null)
+    {
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, BASE_URL + "/login");
+        string body = "{\"username\":\"" + username + "\",\"password\":\"" + password + " \"}";
+        SetBody(request, body);
+        HttpResponseMessage response = await client.SendAsync(request);
+        string data = string.Empty;
+        try
+        {
+            data = await response.Content.ReadAsStringAsync();
+            response.EnsureSuccessStatusCode();
+            onSuccess?.Invoke(JsonUtility.FromJson<UserData>(data));
+        }
+        catch (Exception e)
+        {
+            Debug.Log(e);
+            Debug.Log($"Status code: {response.StatusCode} phrase: {response.ReasonPhrase}");
+            if (e.Message.Contains("Error: AggregateError"))
+            {
+                GlobalEventHandler.TriggerEvent(EventID.OnAggregatorErrorEncountered);
+            }
+            onFail?.Invoke(JsonUtility.FromJson<BaseErrorResponse>(data));
+        }
+    }
+
+
+    public static async void FetchBalance(Action<WalletBalance> onSuccess, Action<BaseErrorResponse> onFail = null)
+    {
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, BASE_URL + "/user/get-balance");
+        SetDefaultHeaders(request);
+        SetHeaders(request);
+        HttpResponseMessage response = await client.SendAsync(request);
+        string data = string.Empty;
+        try
+        {
+            data = await response.Content.ReadAsStringAsync();
+            Debug.Log(data);
+            response.EnsureSuccessStatusCode();
+            onSuccess?.Invoke(JsonUtility.FromJson<WalletBalance>(data));
+        }
+        catch (Exception e)
+        {
+            Debug.Log(e);
+            onFail?.Invoke(JsonUtility.FromJson<BaseErrorResponse>(data));
+        }
+    }
+
+    public static async void CreateWallet(string secretPin, Action<UserData> onSuccess, Action<BaseErrorResponse> onFail = null)
+    {
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, BASE_URL + "/user/create-wallet");
+        string body = "{\"passkey\":\"" + secretPin + "\"}";
+        SetBody(request, body);
+        SetDefaultHeaders(request);
+        SetHeaders(request);
+        HttpResponseMessage response = await client.SendAsync(request);
+        string data = string.Empty;
+        try
+        {
+            data = await response.Content.ReadAsStringAsync();
+            response.EnsureSuccessStatusCode();
+            onSuccess?.Invoke(JsonUtility.FromJson<UserData>(data));
+        }
+        catch (Exception e)
+        {
+            Debug.Log(e);
+            onFail?.Invoke(JsonUtility.FromJson<BaseErrorResponse>(data));
+        }
+
+    }
+
+    public static async void FetchWalletConfig(Action<Wallet> onSuccess, Action<string> onFail)
+    {
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, BASE_URL + "/config/wallet");
+        SetDefaultHeaders(request);
+        SetHeaders(request);
+        HttpResponseMessage response = await client.SendAsync(request);
+        string data = string.Empty;
+        try
+        {
+            data = await response.Content.ReadAsStringAsync();
+            response.EnsureSuccessStatusCode();
+            onSuccess?.Invoke(JsonUtility.FromJson<Wallet>(data));
+        }
+        catch (Exception e)
+        {
+            Debug.Log(e);
+            onFail?.Invoke(data);
+        }
+
+    }
+
+    public static async void WithdrawBalance(string passkey, float amount, string toAddress, Action onSuccess, Action onFail)
+    {
+        string body = "{\"passkey\":\"" + passkey + "\",\"amount\":" + amount + ",\"toAddress\":\"" + toAddress + "\"}";
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, BASE_URL + "/user/withdraw");
+        SetBody(request, body);
+        SetDefaultHeaders(request);
+        SetHeaders(request);
+        HttpResponseMessage response = await client.SendAsync(request);
+        string data = string.Empty;
+        try
+        {
+            data = await response.Content.ReadAsStringAsync();
+            response.EnsureSuccessStatusCode();
+            //onSuccess?.Invoke(JsonUtility.FromJson<Wallet>(data));
+        }
+        catch (Exception e)
+        {
+            Debug.Log(e);
+            //onFail?.Invoke(data);
+        }
+    }
+
+    public static async void FetchUserProfile(Action<UserData> onSuccess, Action<string> onFail)
+    {
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, BASE_URL + "/user/user-info");
+        SetDefaultHeaders(request);
+        SetHeaders(request);
+        HttpResponseMessage response = await client.SendAsync(request);
+        string data = string.Empty;
+        try
+        {
+            data = await response.Content.ReadAsStringAsync();
+            response.EnsureSuccessStatusCode();
+            //onSuccess?.Invoke(JsonUtility.FromJson<Wallet>(data));
+        }
+        catch (Exception e)
+        {
+            Debug.Log(e);
+            //onFail?.Invoke(data);
+        }
+    }
+
+
+    public static async void RecordTournamentSteps(int steps, Action<RecordStepsResult> onSuccess, Action<string> onFail)
+    {
+        string body = "{\"steps\":" + steps + ",\"tournamentId\":" + TournamentManager.tournament.data.tournamentId + "}";
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, BASE_URL + "/tournament/record-steps");
+        SetBody(request, body);
+        SetDefaultHeaders(request);
+        SetHeaders(request);
+        HttpResponseMessage response = await client.SendAsync(request);
+        string data = string.Empty;
+        try
+        {
+            data = await response.Content.ReadAsStringAsync();
+            response.EnsureSuccessStatusCode();
+            onSuccess?.Invoke(JsonUtility.FromJson<RecordStepsResult>(data));
+        }
+        catch (Exception e)
+        {
+            Debug.Log(e);
+            onFail?.Invoke(data);
+        }
+    }
+
+    public static async void RecordUserSteps(int steps, Action<RecordStepsResult> onSuccess, Action<string> onFail)
+    {
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, BASE_URL + "/user/record-steps");
+        string body = "{\"steps\":" + steps + "}";
+        SetBody(request, body);
+        SetDefaultHeaders(request);
+        SetHeaders(request);
+        HttpResponseMessage response = await client.SendAsync(request);
+        string data = string.Empty;
+        try
+        {
+            data = await response.Content.ReadAsStringAsync();
+            response.EnsureSuccessStatusCode();
+            onSuccess?.Invoke(JsonUtility.FromJson<RecordStepsResult>(data));
+        }
+        catch (Exception e)
+        {
+            Debug.Log(e);
+            onFail?.Invoke(data);
+        }
+    }
+
+    public static async void FetchLatestTournamentData(Action<Tournament> onSuccess, Action<BaseErrorResponse> onFail = null)
+    {
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, BASE_URL + "/tournament/get-latest-tournament");
+        SetDefaultHeaders(request);
+        SetHeaders(request);
+        HttpResponseMessage response = await client.SendAsync(request);
+        string data = string.Empty;
+        try
+        {
+            data = await response.Content.ReadAsStringAsync();
+            response.EnsureSuccessStatusCode();
+            onSuccess?.Invoke(JsonUtility.FromJson<Tournament>(data));
+        }
+        catch (Exception e)
+        {
+            Debug.Log(e);
+            onFail?.Invoke(JsonUtility.FromJson<BaseErrorResponse>(data));
+        }
+    }
+
+    public static async void JoinTournament(int tournamentId, Action<JoinTournamentResult> onSuccess, Action<BaseErrorResponse> onFail = null)
+    {
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, BASE_URL + "/tournament/join");
+        string body = "{\"tournamentId\":" + tournamentId + "}";
+        SetBody(request, body);
+        SetDefaultHeaders(request);
+        SetHeaders(request);
+        HttpResponseMessage response = await client.SendAsync(request);
+        string data = string.Empty;
+        try
+        {
+            data = await response.Content.ReadAsStringAsync();
+            response.EnsureSuccessStatusCode();
+            onSuccess?.Invoke(JsonUtility.FromJson<JoinTournamentResult>(data));
+        }
+        catch (Exception e)
+        {
+            Debug.Log(e);
+            onFail?.Invoke(JsonUtility.FromJson<BaseErrorResponse>(data));
+        }
+    }
+
+
 
     public static async void Fetch(string url, Action onSuccess, Action onFail, RequestData requestData = null, bool isCritical = false)
     {
@@ -66,8 +310,8 @@ public static class NetworkHandler
         string data = string.Empty;
         try
         {
-            response.EnsureSuccessStatusCode();
             data = await response.Content.ReadAsStringAsync();
+            response.EnsureSuccessStatusCode();
             onSuccess?.Invoke(JsonUtility.FromJson<T>(data));
         }
         catch (Exception e)
@@ -210,24 +454,29 @@ public static class NetworkHandler
                 request.Method = HttpMethod.Delete;
                 break;
         }
-        if (requestData.body != null)
-            request.Content = new StringContent(requestData.body, System.Text.Encoding.UTF8, requestData.contentType);
-        if (requestData.headers == null)
-            requestData.headers = new Dictionary<string, string>();
 
-        string token = PlayerprefsHandler.GetPlayerPrefsString(PlayerPrefKeys.authToken);
-        if (IsTokenExpired(token) && isCritical)
-            requestData.headers.Add("authorization", PlayerprefsHandler.GetPlayerPrefsString(PlayerPrefKeys.fallbackToken));
-        foreach (var kvp in requestData.headers)
-        {
-            request.Headers.Add(kvp.Key, kvp.Value);
-        }
         request.RequestUri = new Uri(BASE_URL + url);
         return request;
-
     }
-
-
+    static void SetBody(HttpRequestMessage request, string body, string contentType = "application/json")
+    {
+        request.Content = new StringContent(body, System.Text.Encoding.UTF8, contentType);
+    }
+    private static void SetHeaders(HttpRequestMessage request, RequestData requestData = null)
+    {
+        string token = PlayerprefsHandler.GetPlayerPrefsString(PlayerPrefKeys.authToken);
+        if (IsTokenExpired(token))
+            request.Headers.Add("authorization", PlayerprefsHandler.GetPlayerPrefsString(PlayerPrefKeys.fallbackToken));
+        else
+            request.Headers.Add("authorization", token);
+        if (requestData != null)
+            foreach (var kvp in requestData.headers)
+                request.Headers.Add(kvp.Key, kvp.Value);
+    }
+    private static void SetDefaultHeaders(HttpRequestMessage request)
+    {
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+    }
     public static bool IsTokenExpired(string token)
     {
         //just to be sure the token won't expire within a minute or two

@@ -2971,6 +2971,7 @@ MonoBehaviour:
   userData:
     user:
       token: 
+      fallbackToken: 
       username: 
       stepsCount: 
       publicKey: 
@@ -16990,6 +16991,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _loginScreen: {fileID: 401452578}
+  _sessionExpiredMsg: {fileID: 815860630}
+  _encryptionCredentials: {fileID: 11400000, guid: 16b81ab65815bff47bf918ecac3d3edc, type: 2}
 --- !u!1 &2121969024
 GameObject:
   m_ObjectHideFlags: 0

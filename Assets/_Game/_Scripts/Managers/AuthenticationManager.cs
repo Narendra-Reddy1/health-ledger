@@ -71,38 +71,31 @@ namespace BenStudios
                 return;
             }
             _ToggleLoadingScreen(true);
-            NetworkHandler.Fetch("/login", (userData) =>
-             {
-                 var loginData = JsonUtility.FromJson<UserData>(userData);
-                 UserDataHandler.instance.userData = loginData;
+            NetworkHandler.Login(_username.text, _password.text, (loginData) =>
+              {
+                  UserDataHandler.instance.userData = loginData;
 
-                 PlayerprefsHandler.SetPlayerPrefsAsString(PlayerPrefKeys.authToken, loginData.user.token);
-                 PlayerprefsHandler.SetSecurePlayerPrefsAsString(PlayerPrefKeys.fallbackToken, loginData.user.token);
-                 PlayerprefsHandler.SetPlayerPrefsAsString(PlayerPrefKeys.username, loginData.user.username);
+                  PlayerprefsHandler.SetPlayerPrefsAsString(PlayerPrefKeys.authToken, loginData.user.token);
+                  PlayerprefsHandler.SetSecurePlayerPrefsAsString(PlayerPrefKeys.fallbackToken, loginData.user.token);
+                  PlayerprefsHandler.SetPlayerPrefsAsString(PlayerPrefKeys.username, loginData.user.username);
 
-                 _ToggleLoadingScreen(false);
-                 PlayerprefsHandler.SetPlayerPrefsBool(PlayerPrefKeys.isLoggedIn, true);
+                  _ToggleLoadingScreen(false);
+                  PlayerprefsHandler.SetPlayerPrefsBool(PlayerPrefKeys.isLoggedIn, true);
 
-                 if (!string.IsNullOrEmpty(loginData.user.publicKey))
-                     PlayerprefsHandler.SetPlayerPrefsBool(PlayerPrefKeys.hasWallet, true);
-                 gameObject.SetActive(false);
+                  if (!string.IsNullOrEmpty(loginData.user.publicKey))
+                      PlayerprefsHandler.SetPlayerPrefsBool(PlayerPrefKeys.hasWallet, true);
+                  gameObject.SetActive(false);
 
-             }, (err) =>
-             {
-                 _errorTxtParent.SetActive(true);
-                 var error = JsonUtility.FromJson<BaseErrorResponse>(err);
-                 if (error.message.Contains("Invalid credentials"))
-                     _errorTxt.SetText("Invalid credentials");
-                 else
-                     _errorTxt.SetText("Something went wrong. Please try again later");
-                 _ToggleLoadingScreen(false);
+              }, (error) =>
+              {
+                  _errorTxtParent.SetActive(true);
+                  if (error.message.Contains("Invalid credentials"))
+                      _errorTxt.SetText("Invalid credentials");
+                  else
+                      _errorTxt.SetText("Something went wrong. Please try again later");
+                  _ToggleLoadingScreen(false);
 
-             }, new NetworkHandler.RequestData
-             {
-                 method = NetworkHandler.Method.POST,
-                 body = "{\"username\":\"" + _username.text + "\",\"password\":\"" + _password.text + " \"}"
-
-             });
+              });
         }
         private void _SignUp()
         {
@@ -123,36 +116,30 @@ namespace BenStudios
             }
             _ToggleLoadingScreen(true);
 
-            NetworkHandler.Fetch("/sign-up", (userData) =>
-            {
-                //disable login screen show the home page
-                var signupData = JsonUtility.FromJson<UserData>(userData);
-                UserDataHandler.instance.userData = signupData;
-                PlayerprefsHandler.SetPlayerPrefsAsString(PlayerPrefKeys.authToken, signupData.user.token);
-                PlayerprefsHandler.SetSecurePlayerPrefsAsString(PlayerPrefKeys.fallbackToken, signupData.user.token);
-                PlayerprefsHandler.SetPlayerPrefsAsString(PlayerPrefKeys.username, signupData.user.username);
-                PlayerprefsHandler.SetPlayerPrefsBool(PlayerPrefKeys.isLoggedIn, true);
-                _ToggleLoadingScreen(false);
 
-                gameObject.SetActive(false);
+            NetworkHandler.SignUp(_username.text, _password.text, (signupData) =>
+             {
+                 //disable login screen show the home page
+                 UserDataHandler.instance.userData = signupData;
+                 PlayerprefsHandler.SetPlayerPrefsAsString(PlayerPrefKeys.authToken, signupData.user.token);
+                 PlayerprefsHandler.SetSecurePlayerPrefsAsString(PlayerPrefKeys.fallbackToken, signupData.user.token);
+                 PlayerprefsHandler.SetPlayerPrefsAsString(PlayerPrefKeys.username, signupData.user.username);
+                 PlayerprefsHandler.SetPlayerPrefsBool(PlayerPrefKeys.isLoggedIn, true);
+                 _ToggleLoadingScreen(false);
 
-            }, (err) =>
-            {
-                _errorTxtParent.SetActive(true);
-                var error = JsonUtility.FromJson<BaseErrorResponse>(err);
-                if (error.message.Contains("conflicting usernames"))
-                    _errorTxt.SetText("Username already taken. Please use different one");
-                else
-                    _errorTxt.SetText("Something went wrong. Please try again later");
-                _ToggleLoadingScreen(false);
+                 gameObject.SetActive(false);
 
-                //conflicting usernames
-            }, new NetworkHandler.RequestData
-            {
-                method = NetworkHandler.Method.POST,
-                body = "{\"username\":\"" + _username.text + "\",\"password\":\"" + _password.text + " \"}"
+             }, (error) =>
+             {
+                 _errorTxtParent.SetActive(true);
+                 if (error.message.Contains("conflicting usernames"))
+                     _errorTxt.SetText("Username already taken. Please use different one");
+                 else
+                     _errorTxt.SetText("Something went wrong. Please try again later");
+                 _ToggleLoadingScreen(false);
 
-            });
+                 //conflicting usernames
+             });
         }
 
         private bool _isPasswordValid(string password)
